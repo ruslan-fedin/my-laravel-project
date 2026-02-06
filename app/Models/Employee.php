@@ -77,7 +77,7 @@ public function leader()
     /**
      * Отношение к непосредственному руководителю.
      */
-   
+
 
     /**
      * Отношение к тем, кого данный сотрудник замещает (ВРИО).
@@ -105,4 +105,9 @@ public function leader()
     {
         $this->attributes['middle_name'] = $value ? Str::ucfirst(Str::lower(trim($value))) : null;
     }
+
+    public function travelTimesheets()
+{
+    return $this->hasMany(TravelTimesheet::class);
+}
 }

@@ -11,86 +11,49 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
     <style>
-        body {
-            background-color: #f8fafc;
-            /* Ваши требования по отступам для ПК */
-            padding: 20px 120px 40px 120px;
-            font-family: 'Inter', sans-serif;
-            color: #1e293b;
-        }
-        /* Адаптив для мобильных: уменьшаем отступы */
-        @media (max-width: 1024px) {
-            body { padding: 15px 10px; }
-        }
-
-        .card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 1rem; overflow: hidden; }
-
-        /* Контейнер таблицы с горизонтальным скроллом */
-        .table-container {
-            overflow-x: auto;
-            width: 100%;
-            border-radius: 8px;
-            position: relative;
-            background: white;
-        }
-
-        table {
-            border-collapse: separate;
-            border-spacing: 0;
-            table-layout: fixed;
-            /* Минимальная ширина, чтобы ячейки дней не сжимались в кашу на телефоне */
-            min-width: 1200px;
-            width: 100%;
-        }
-
-        th, td { border: 1px solid #e2e8f0; height: 44px; text-align: center; font-size: 11px; vertical-align: middle; }
-        th { background: #f1f5f9; font-weight: 800; text-transform: uppercase; color: #475569; padding: 4px; }
-
-        .col-num { width: 35px; }
-
-        /* STICKY COLUMN: Закрепление колонки с именем */
-        .col-name {
-            width: 320px;
-            text-align: left;
-            padding: 8px 12px;
-            position: sticky;
-            left: 0;
-            z-index: 30;
-            background: #fff;
-            border-right: 2px solid #3b82f6; /* Синий разделитель */
-        }
-        /* У заголовка z-index должен быть выше, чем у ячеек */
-        th.col-name { z-index: 40; background: #f1f5f9; }
-
-        /* Адаптация ширины колонки имени для мобильных */
+        body { background-color: #f8fafc; padding: 0 40px 40px 40px; font-family: 'Inter', sans-serif; color: #1e293b; }
         @media (max-width: 768px) {
-            .col-name { width: 200px; padding: 5px; }
-            .emp-fullname { font-size: 11px !important; }
+            body { padding: 0 12px 20px 12px; }
+            .col-name { width: 180px !important; }
         }
-
+        .card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 1rem; overflow: hidden; }
+        .table-container { overflow-x: auto; width: 100%; border-radius: 8px; position: relative; background: white; }
+        table { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: 100%; }
+        th, td { border: 1px solid #e2e8f0; height: 44px; text-align: center; font-size: 11px; }
+        th { background: #f1f5f9; font-weight: 800; text-transform: uppercase; color: #475569; padding: 4px; }
+        .col-num { width: 35px; }
+        .col-name { width: 320px; text-align: left; padding: 8px 12px; position: sticky; left: 0; z-index: 30; background: #fff; border-right: 3px solid #3b82f6; }
         .emp-fullname { font-size: 13px; font-weight: 800; line-height: 1.2; color: #0f172a; white-space: normal; word-break: break-word; }
         .emp-position { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-top: 2px; }
-
         .day-col { width: 40px !important; min-width: 40px; max-width: 40px; }
         .col-extra { width: 150px; }
         .col-check { width: 45px; }
         .col-action { width: 45px; }
-
         .weekend-header { background-color: #fca5a5 !important; color: #7f1d1d !important; }
         .weekend-cell { background-color: #fecaca; }
 
         .status-select {
-            width: 100%; height: 100%; border: none; background: transparent;
-            appearance: none; -webkit-appearance: none; -moz-appearance: none;
-            text-align: center; text-align-last: center; font-weight: 900;
-            cursor: pointer; outline: none; font-size: 13px; display: block; padding: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            text-align: center;
+            text-align-last: center;
+            font-weight: 900;
+            cursor: pointer;
+            outline: none;
+            font-size: 13px;
+            display: block;
+            padding: 0;
         }
         .status-select::-ms-expand { display: none; }
 
         textarea { width: 100%; height: 100%; border: none; background: transparent; resize: none; font-size: 11px; padding: 6px; outline: none; }
         .hidden-day { display: none !important; }
         .filter-input { height: 40px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 12px; font-size: 13px; font-weight: 600; outline: none; }
-
         .summary-pill-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; }
         .summary-pill { display: flex; align-items: center; border-radius: 9999px; padding: 5px 14px 5px 6px; color: white; }
         .summary-pill-val { background: rgba(255,255,255,0.3); border-radius: 9999px; min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: 900; margin-right: 10px; }
@@ -113,14 +76,13 @@
     };
 @endphp
 
-{{-- ЗАГОЛОВОК (Адаптивный flex-col) --}}
 <div class="mt-6 mb-4 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
     <div>
         <h1 class="text-2xl font-black text-slate-900 uppercase tracking-tight">Редактор табеля</h1>
         <p class="text-slate-500 font-bold text-xs uppercase">{{ $start->translatedFormat('F Y') }}</p>
     </div>
     <div class="flex gap-2 w-full md:w-auto">
-        <button onclick="exportToExcel()" class="bg-emerald-600 text-white px-5 h-11 rounded-lg font-black text-[10px] uppercase flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all flex-1 md:flex-none">
+        <button onclick="exportToExcel()" class="bg-emerald-600 text-white px-5 h-11 rounded-lg font-black text-[10px] uppercase flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">
             <i class="fa-solid fa-file-excel"></i> <span>Экспорт Excel</span>
         </button>
         <div id="modeIndicator" class="hidden px-4 h-11 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase flex items-center">Фокус дня</div>
@@ -130,12 +92,11 @@
 {{-- БЛОК ФИЛЬТРОВ И ДОБАВЛЕНИЯ --}}
 <div class="card p-3 bg-slate-50/50">
     <div class="flex flex-col xl:flex-row gap-4">
-        {{-- Группа добавления --}}
         <div class="flex flex-col sm:flex-row gap-2">
-            <form action="/travel-timesheets/{{ $timesheet->id }}/add-employee" method="POST" class="flex gap-2 w-full sm:w-auto">
+            <form action="/travel-timesheets/{{ $timesheet->id }}/add-employee" method="POST" class="flex gap-2">
                 @csrf
-                <select name="employee_id" class="filter-input w-full sm:w-64" required>
-                    <option value="">+ Выбрать сотрудника...</option>
+                <select name="employee_id" class="filter-input w-64" required>
+                    <option value="">+ Выбрать сотрудника полностью...</option>
                     @foreach($allAvailableEmployees as $e)
                         @unless(in_array($e->id, $addedIds))
                             <option value="{{ $e->id }}">{{ $formatFullFio($e) }}</option>
@@ -144,26 +105,25 @@
                 </select>
                 <button type="submit" class="bg-blue-600 text-white px-4 rounded-lg font-bold text-[10px] uppercase">Ок</button>
             </form>
-            <form action="/travel-timesheets/{{ $timesheet->id }}/add-all" method="POST" class="w-full sm:w-auto">
+            <form action="/travel-timesheets/{{ $timesheet->id }}/add-all" method="POST">
                 @csrf
                 <button type="submit" class="w-full bg-slate-800 text-white px-4 h-10 rounded-lg font-bold text-[10px] uppercase ">Добавить всех активных</button>
             </form>
         </div>
 
-        {{-- Группа фильтров --}}
         <div class="flex flex-col sm:flex-row gap-2 flex-1">
             <div class="relative flex-1">
                 <i class="fa-solid fa-search absolute left-3 top-3.5 text-slate-400 text-xs"></i>
                 <input type="text" id="tableSearch" class="filter-input pl-9 w-full" placeholder="Поиск (ФИО полностью)...">
             </div>
             <div class="flex gap-2">
-                <select id="filterDate" class="filter-input w-full sm:w-32 border-blue-200 border-2">
+                <select id="filterDate" class="filter-input w-32 border-blue-200 border-2">
                     <option value="">Весь месяц</option>
                     @foreach($dates as $date)
                         <option value="{{ $date->format('Y-m-d') }}">{{ $date->format('d.m') }}</option>
                     @endforeach
                 </select>
-                <select id="filterStatus" class="filter-input w-full sm:w-32">
+                <select id="filterStatus" class="filter-input w-32">
                     <option value="">Статус...</option>
                     @foreach($statuses as $s) <option value="{{ $s->id }}">{{ $s->name }}</option> @endforeach
                 </select>
@@ -180,7 +140,6 @@
             <thead>
                 <tr>
                     <th class="col-num">№</th>
-                    {{-- Здесь применяется класс col-name со sticky-позиционированием --}}
                     <th class="col-name cursor-pointer hover:bg-slate-200 transition-colors" onclick="toggleSortFio()">
                         Сотрудник (ФИО полностью) <i class="fa-solid fa-sort ml-1 opacity-40"></i>
                     </th>
@@ -199,7 +158,6 @@
                 @php $fullName = $formatFullFio($emp); @endphp
                 <tr class="employee-row" data-fio="{{ $fullName }}">
                     <td class="text-slate-400 font-mono text-[9px] bg-white">{{ $index + 1 }}</td>
-                    {{-- Здесь применяется класс col-name со sticky-позиционированием --}}
                     <td class="col-name">
                         <div class="emp-fullname">{{ $fullName }}</div>
                         <div class="emp-position">{{ $emp->position->name ?? '---' }}</div>
@@ -235,7 +193,7 @@
     </div>
 </div>
 
-{{-- БЛОК ПАРАМЕТРОВ ВЫЕЗДА ДЛЯ TELEGRAM --}}
+{{-- БЛОК ПАРАМЕТРОВ ВЫЕЗДА ДЛЯ TELEGRAM С КНОПКОЙ РАСКРЫТИЯ --}}
 <div class="card bg-gray-50 border-l-4 border-blue-600 mb-4 shadow-sm">
     <div class="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-100 transition-colors" onclick="toggleTgDetails()">
         <div class="flex items-center gap-3">
@@ -275,8 +233,19 @@
             </div>
         </div>
 
+        {{-- ГАЛОЧКА ДЛЯ ССЫЛКИ --}}
+        <div class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" id="tgIncludePublicLink" class="w-5 h-5 accent-blue-600" checked>
+                <div>
+                    <span class="block text-[10px] font-black text-blue-800 uppercase">Прикрепить ссылку на публичную страницу</span>
+                    <span class="text-[9px] text-blue-400 font-bold">public-tabel/{{ $timesheet->slug ?? $timesheet->id }}</span>
+                </div>
+            </label>
+        </div>
+
         <div class="flex justify-end border-t pt-4">
-            <button onclick="sendToTelegram()" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-black text-[11px] uppercase flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg active:scale-95 w-full md:w-auto justify-center">
+            <button onclick="sendToTelegram()" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-black text-[11px] uppercase flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg active:scale-95">
                 <i class="fab fa-telegram-plane"></i> <span>Отправить готовый отчет</span>
             </button>
         </div>
@@ -334,38 +303,48 @@
     <input type="hidden" name="transport" id="tgTransportInput">
     <input type="hidden" name="work_type" id="tgWorkTypeInput">
     <input type="hidden" name="departure" id="tgDepartureInput">
+    <input type="hidden" name="public_link" id="tgPublicLinkInput"> {{-- ВОТ ЭТО ПОЛЕ --}}
 </form>
 
 <script>
     const allStatuses = [ @foreach($statuses as $s) { id: '{{ $s->id }}', name: '{{ $s->name }}', short: '{{ $s->short_name }}', color: '{{ $s->color }}' }, @endforeach ];
     let sortDirection = 'asc';
 
-    function sendToTelegram() {
-        const dateSelect = document.getElementById('filterDate');
-        const statusSelect = document.getElementById('filterStatus');
+   function sendToTelegram() {
+    const dateSelect = document.getElementById('filterDate');
+    const statusSelect = document.getElementById('filterStatus');
 
-        if (!dateSelect.value || !statusSelect.value) {
-            alert('Сначала выберите ДАТУ и СТАТУС в фильтрах табеля!'); return;
-        }
-
-        document.getElementById('tgDateInput').value = dateSelect.value;
-        document.getElementById('tgStatusInput').value = statusSelect.value;
-
-        // Добавляем иконки в скрытую форму перед отправкой
-        const workType = document.getElementById('tgWorkType').value;
-        const inventory = document.getElementById('tgInventory').value;
-        const departure = document.getElementById('tgDeparture').value;
-        const transport = document.getElementById('tgTransport').value;
-        const notes = document.getElementById('tgNotes').value;
-
-        document.getElementById('tgWorkTypeInput').value = workType ? "⚙️ ВИД РАБОТЫ: " + workType : "";
-        document.getElementById('tgInventoryInput').value = inventory ? "⚒️ ИНСТРУМЕНТ: " + inventory : "";
-        document.getElementById('tgDepartureInput').value = departure ? "🕒 ВЫЕЗД: " + departure : "";
-        document.getElementById('tgTransportInput').value = transport ? "🚚 ТРАНСПОРТ: " + transport : "";
-        document.getElementById('tgNotesInput').value = notes ? "🎒 ПРИМЕЧАНИЕ: " + notes : "";
-
-        document.getElementById('tgHiddenForm').submit();
+    if (!dateSelect.value || !statusSelect.value) {
+        alert('Сначала выберите ДАТУ и СТАТУС в фильтрах табеля!'); return;
     }
+
+    document.getElementById('tgDateInput').value = dateSelect.value;
+    document.getElementById('tgStatusInput').value = statusSelect.value;
+
+    const workType = document.getElementById('tgWorkType').value;
+    const inventory = document.getElementById('tgInventory').value;
+    const departure = document.getElementById('tgDeparture').value;
+    const transport = document.getElementById('tgTransport').value;
+    const notes = document.getElementById('tgNotes').value;
+
+    document.getElementById('tgWorkTypeInput').value = workType ? "⚙️ ВИД РАБОТЫ: " + workType : "";
+    document.getElementById('tgInventoryInput').value = inventory ? "⚒️ ИНСТРУМЕНТ: " + inventory : "";
+    document.getElementById('tgDepartureInput').value = departure ? "🕒 ВЫЕЗД: " + departure : "";
+    document.getElementById('tgTransportInput').value = transport ? "🚚 ТРАНСПОРТ: " + transport : "";
+    document.getElementById('tgNotesInput').value = notes ? "🎒 ПРИМЕЧАНИЕ: " + notes : "";
+
+    // ПРОВЕРКА ГАЛОЧКИ ДЛЯ ССЫЛКИ
+    const includeLink = document.getElementById('tgIncludePublicLink').checked;
+    if (includeLink) {
+        // Подставляем URL. Убедись, что маршрут 'public-tabel' существует
+        const publicUrl = window.location.origin + "/public-tabel/{{ $timesheet->slug ?? $timesheet->id }}";
+        document.getElementById('tgPublicLinkInput').value = publicUrl;
+    } else {
+        document.getElementById('tgPublicLinkInput').value = "";
+    }
+
+    document.getElementById('tgHiddenForm').submit();
+}
 
 function toggleTgDetails() {
     const content = document.getElementById('tgDetailsContent');
@@ -416,7 +395,6 @@ function toggleTgDetails() {
         const selectedStatus = document.getElementById('filterStatus').value;
         const table = document.getElementById('mainTable');
 
-        // В режиме одного дня таблица становится "резиновой" (auto), иначе 100%
         table.style.width = selectedDate ? 'auto' : '100%';
 
         document.querySelectorAll('.day-col, th.day-col').forEach(el => {

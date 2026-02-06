@@ -1,22 +1,25 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\StatusController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\PositionController;
-use App\Http\Controllers\StatusController;
 use App\Http\Controllers\TimesheetController;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\TravelTimesheetController;
+use App\Http\Controllers\SharedBoardController;
 use App\Http\Controllers\TelegramReportController;
+use App\Http\Controllers\TravelTimesheetController;
 
-Route::post('/telegram/send-center-report', [TelegramReportController::class, 'sendCenterReport'])->name('telegram.center-report');
-
-Route::delete('employees/{id}/force-delete', [EmployeeController::class, 'forceDelete'])->name('employees.forceDelete');
 /*
 |--------------------------------------------------------------------------
-| ПУБЛИЧНЫЕ МАРШРУТЫ
+| ПУБЛИЧНЫЕ МАРШРУТЫ (Доступны без логина)
 |--------------------------------------------------------------------------
 */
+
+// Публичная ссылка на табель по секрету (ID)
+Route::get('/public-tabel/{secret}', [SharedBoardController::class, 'showBoard'])->name('public.tabel');
+
+// Авторизация
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
@@ -24,7 +27,7 @@ Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name(
 
 /*
 |--------------------------------------------------------------------------
-| ЗАЩИЩЕННЫЕ МАРШРУТЫ (AUTH)
+| ЗАЩИЩЕННЫЕ МАРШРУТЫ (Требуют логин)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->group(function () {
@@ -33,25 +36,26 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/', function () { return redirect()->route('timesheets.index'); })->name('home');
     Route::get('/dashboard', function () { return redirect()->route('timesheets.index'); })->name('dashboard');
 
-    // --- ИМПОРТ СОТРУДНИКОВ ---
+    // --- TELEGRAM ОТЧЕТЫ ---
+    Route::post('/telegram/send-center-report', [TelegramReportController::class, 'sendCenterReport'])->name('telegram.center-report');
+    Route::post('/telegram/send-public-link', [TelegramReportController::class, 'sendPublicLink'])->name('telegram.public-link');
+
+    // --- СОТРУДНИКИ ---
     Route::get('/employees/import', [EmployeeController::class, 'showImportForm'])->name('employees.import.form');
     Route::post('/employees/import', [EmployeeController::class, 'import'])->name('employees.import.store');
+    Route::get('employees/archive', [EmployeeController::class, 'archive'])->name('employees.archive');
+    Route::patch('employees/{id}/restore', [EmployeeController::class, 'restore'])->name('employees.restore');
+    Route::delete('employees/{id}/force-delete', [EmployeeController::class, 'forceDelete'])->name('employees.forceDelete');
+    Route::resource('employees', EmployeeController::class);
 
-    // --- УПРАВЛЕНИЕ СТРУКТУРОЙ БРИГАД ---
+    // --- БРИГАДЫ ---
     Route::get('/brigades', [EmployeeController::class, 'showBrigades'])->name('brigades.index');
     Route::post('/brigades/vacation/start', [EmployeeController::class, 'startVacation'])->name('brigades.start-vacation');
     Route::post('/brigades/vacation/return', [EmployeeController::class, 'returnVacation'])->name('brigades.return-vacation');
     Route::post('/brigades/update-leader', [EmployeeController::class, 'updateLeader'])->name('brigades.update-leader');
     Route::post('/brigades/update-location', [EmployeeController::class, 'updateLocation'])->name('brigades.update-location');
 
-    // --- СОТРУДНИКИ (АРХИВ И ВОССТАНОВЛЕНИЕ) ---
-    Route::get('employees/archive', [EmployeeController::class, 'archive'])->name('employees.archive');
-    Route::patch('employees/{id}/restore', [EmployeeController::class, 'restore'])->name('employees.restore');
-
-    // ОСНОВНОЙ РЕСУРС СОТРУДНИКОВ
-    Route::resource('employees', EmployeeController::class);
-
-    // Справочники
+    // --- СПРАВОЧНИКИ ---
     Route::resource('positions', PositionController::class);
     Route::resource('statuses', StatusController::class);
 
