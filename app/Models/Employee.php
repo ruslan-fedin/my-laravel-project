@@ -2,192 +2,107 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Employee extends Model
 {
     use SoftDeletes;
 
+    /**
+     * Массив полей для массового заполнения.
+     * Добавлены birth_date, hire_date и phone из вашей формы редактирования.
+     */
     protected $fillable = [
-        'last_name', 'first_name', 'middle_name', 'position_id',
-        'birth_date', 'hire_date', 'phone', 'is_active'
+        'last_name',
+        'first_name',
+        'middle_name',
+        'position_id',
+        'parent_id',
+        'status',
+        'substitute_id',
+        'is_active',
+        'birth_date',
+        'hire_date',
+        'phone'
     ];
 
+    /**
+     * Приведение типов.
+     * deleted_at автоматически обрабатывается трейтом SoftDeletes,
+     * но мы добавляем его сюда для гарантии корректной работы с Carbon.
+     */
     protected $casts = [
+        'is_active' => 'boolean',
         'birth_date' => 'date',
         'hire_date' => 'date',
-        'is_active' => 'boolean',
         'deleted_at' => 'datetime',
     ];
 
     /**
-     * Связь с должностью
+     * Аксессор: Фамилия Имя Отчество полностью.
+     * Всегда выводит ФИО целиком согласно вашему требованию.
      */
-    public function position()
+    public function getFullNameAttribute()
+    {
+        return trim("{$this->last_name} {$this->first_name} {$this->middle_name}");
+    }
+
+
+    // Внутри класса Employee
+public function leader()
+{
+    return $this->belongsTo(Employee::class, 'parent_id');
+}
+
+    /**
+     * Отношение к должности.
+     */
+    public function position(): BelongsTo
     {
         return $this->belongsTo(Position::class, 'position_id');
     }
 
     /**
-     * Связь с записями в табеле (включая удаленных сотрудников)
+     * Отношение к подчиненным (для структуры бригад).
      */
-    public function timesheetItems()
+    public function subordinates(): HasMany
     {
-        return $this->hasMany(TimesheetItem::class, 'employee_id');
+        return $this->hasMany(Employee::class, 'parent_id');
     }
 
     /**
-     * Scope для получения только активных сотрудников
+     * Отношение к непосредственному руководителю.
      */
-    public function scopeActive($query)
+   
+
+    /**
+     * Отношение к тем, кого данный сотрудник замещает (ВРИО).
+     */
+    public function subbingFor(): HasMany
     {
-        return $query->where('is_active', true)->whereNull('deleted_at');
+        return $this->hasMany(Employee::class, 'substitute_id', 'id');
     }
 
     /**
-     * Scope для получения удаленных сотрудников
-     */
-    public function scopeTrashedOnly($query)
-    {
-        return $query->whereNotNull('deleted_at');
-    }
-
-    /**
-     * Проверка, удален ли сотрудник
-     */
-    public function getIsTrashedAttribute(): bool
-    {
-        return $this->trashed();
-    }
-
-    /**
-     * Переопределение метода delete для мягкого удаления
-     */
-    public function delete()
-    {
-        if ($this->trashed()) {
-            return parent::delete(); // Если уже удален, вызываем родительский
-        }
-
-        // Проверяем, есть ли связанные записи в табеле
-        $hasTimesheetItems = $this->timesheetItems()->exists();
-
-        // Можно добавить логирование
-        if ($hasTimesheetItems) {
-            \Log::info("Сотрудник {$this->full_name} перемещен в архив. Записей в табеле: " .
-                      $this->timesheetItems()->count());
-        }
-
-        // Деактивируем сотрудника
-        $this->is_active = false;
-        $this->save();
-
-        // Вызываем мягкое удаление
-        return parent::delete();
-    }
-
-    /**
-     * Восстановление сотрудника с активацией
-     */
-    public function restore()
-    {
-        $result = parent::restore();
-
-        if ($result) {
-            $this->is_active = true;
-            $this->save();
-
-            \Log::info("Сотрудник {$this->full_name} восстановлен из архива");
-        }
-
-        return $result;
-    }
-
-    /**
-     * Полное удаление (только если нет записей в табеле)
-     */
-    public function forceDeleteIfSafe()
-    {
-        if ($this->timesheetItems()->exists()) {
-            throw new \Exception('Невозможно удалить сотрудника, так как имеются связанные записи в табеле');
-        }
-
-        return $this->forceDelete();
-    }
-
-    /**
-     * Форматирование Фамилии: Иванов
+     * Мутаторы для автоматического исправления регистра.
+     * Сохраняют первую букву заглавной, остальные строчными.
      */
     public function setLastNameAttribute($value)
     {
         $this->attributes['last_name'] = Str::ucfirst(Str::lower(trim($value)));
     }
 
-    /**
-     * Форматирование Имени: Иван
-     */
     public function setFirstNameAttribute($value)
     {
         $this->attributes['first_name'] = Str::ucfirst(Str::lower(trim($value)));
     }
 
-    /**
-     * Форматирование Отчества: Иванович
-     */
     public function setMiddleNameAttribute($value)
     {
         $this->attributes['middle_name'] = $value ? Str::ucfirst(Str::lower(trim($value))) : null;
-    }
-
-    /**
-     * Полное имя сотрудника
-     */
-    public function getFullNameAttribute()
-    {
-        return Str::ucfirst(Str::lower($this->last_name)) . ' ' .
-               Str::ucfirst(Str::lower($this->first_name)) . ' ' .
-               Str::ucfirst(Str::lower($this->middle_name));
-    }
-
-    /**
-     * Краткое ФИО (Иванов И.И.)
-     */
-    public function getShortNameAttribute()
-    {
-        $lastName = Str::ucfirst(Str::lower($this->last_name));
-        $firstName = $this->first_name ? mb_substr($this->first_name, 0, 1) . '.' : '';
-        $middleName = $this->middle_name ? mb_substr($this->middle_name, 0, 1) . '.' : '';
-
-        return $lastName . ' ' . $firstName . $middleName;
-    }
-
-    /**
-     * Стаж работы
-     */
-    public function getExperienceAttribute()
-    {
-        if (!$this->hire_date) {
-            return '—';
-        }
-
-        $hireDate = Carbon::parse($this->hire_date);
-        $now = Carbon::now();
-
-        $diff = $hireDate->diff($now);
-
-        $years = $diff->y;
-        $months = $diff->m;
-        $days = $diff->d;
-
-        $result = [];
-        if ($years > 0) $result[] = $years . ' г.';
-        if ($months > 0) $result[] = $months . ' мес.';
-        if ($years == 0 && $months == 0) $result[] = $days . ' дн.';
-
-        return implode(' ', $result);
     }
 }

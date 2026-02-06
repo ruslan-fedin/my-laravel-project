@@ -2,6 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    {{-- Добавил viewport для корректного отображения масштаба на мобильных --}}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Табель — {{ $timesheet->id }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -9,47 +11,60 @@
     <style>
         body {
             background-color: #f1f5f9;
+            /* ВАШИ ТРЕБОВАНИЯ: 120px на ПК, но адаптив на мобильных */
             padding: 20px 120px 40px 120px;
             font-family: 'Inter', system-ui, sans-serif;
             color: #1e293b;
         }
 
-        .nav-menu {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 30px;
-            padding: 15px 0;
-            border-bottom: 1px solid #e2e8f0;
+        /* Медиа-запрос для мобильных устройств (убираем огромные отступы) */
+        @media (max-width: 1024px) {
+            body { padding: 15px 10px; }
         }
-        .nav-links { display: flex; gap: 20px; }
-        .nav-link {
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            color: #64748b;
-            transition: color 0.2s;
-        }
-        .nav-link:hover { color: #0f172a; }
-        .nav-link.active { color: #3b82f6; }
 
+        /* СТИЛИ ТАБЛИЦЫ */
         .table-container {
             width: 100%;
             border: 1px solid #e2e8f0;
             background: white;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
             border-radius: 4px;
-            overflow: hidden;
+            overflow-x: auto; /* Разрешаем горизонтальный скролл */
+            position: relative;
         }
 
-        table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+        table {
+            width: 100%;
+            /* min-width гарантирует, что таблица не сожмется в кашу на телефоне */
+            min-width: 1200px;
+            table-layout: fixed;
+            border-collapse: separate; /* Нужно для sticky элементов */
+            border-spacing: 0;
+        }
 
         .col-num { width: 45px; cursor: pointer; }
+
+        /* Адаптивная ширина колонки ФИО */
         .col-fio { width: 350px; cursor: pointer; }
-        .col-date { width: auto; }
+        @media (max-width: 768px) { .col-fio { width: 220px; } }
+
+        .col-date { width: 40px; } /* Чуть компактнее даты */
         .col-comment { width: 180px; }
         .col-check { width: 40px; }
         .col-del { width: 45px; }
+
+        /* ЗАКРЕПЛЕНИЕ КОЛОНКИ ФИО (Sticky) */
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            background-color: white; /* Чтобы текст под ней не просвечивал */
+            border-right: 2px solid #e2e8f0 !important; /* Разделитель */
+        }
+        th.sticky-col {
+            z-index: 20; /* Заголовок должен быть выше ячеек */
+            background-color: #f8fafc;
+        }
 
         th {
             background: #f8fafc;
@@ -86,56 +101,21 @@
             vertical-align: middle !important;
         }
 
-        /* ФИО И ДОЛЖНОСТЬ ПО ЛЕВОМУ КРАЮ */
-        .fio-cell {
-            text-align: left !important;
-            padding: 5px 15px !important;
-        }
+        .fio-cell { text-align: left !important; padding: 5px 15px !important; }
+        .fio-text { font-size: 14px; font-weight: 900; color: #0f172a; display: block; line-height: 1.2; text-align: left; }
+        /* Уменьшаем шрифт ФИО на мобильном, чтобы влезло */
+        @media (max-width: 768px) { .fio-text { font-size: 11px; line-height: 1.1; } }
 
-        .fio-text {
-            font-size: 14px;
-            font-weight: 900;
-            color: #0f172a;
-            /* text-transform убран для корректного регистра */
-            display: block;
-            line-height: 1.2;
-            text-align: left;
-        }
+        .pos-text { font-size: 11px; font-weight: 800; color: #3b82f6; text-transform: uppercase; display: block; text-align: left; margin-top: 2px; }
 
-        .pos-text {
-            font-size: 11px;
-            font-weight: 800;
-            color: #3b82f6;
-            text-transform: uppercase;
-            display: block;
-            text-align: left;
-            margin-top: 2px;
-        }
-
-        .status-td {
-            text-align: center !important;
-        }
-
+        .status-td { text-align: center !important; }
         .cell-select {
-            appearance: none !important;
-            -webkit-appearance: none !important;
-            -moz-appearance: none !important;
-            border: none !important;
-            outline: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            cursor: pointer !important;
-            font-weight: 900 !important;
-            font-size: 12px !important;
-            background: transparent !important;
-            display: block !important;
-            text-align: center !important;
-            text-align-last: center !important;
+            appearance: none !important; -webkit-appearance: none !important; -moz-appearance: none !important;
+            border: none !important; outline: none !important; padding: 0 !important; margin: 0 !important;
+            width: 100% !important; height: 100% !important; cursor: pointer !important;
+            font-weight: 900 !important; font-size: 12px !important; background: transparent !important;
+            display: block !important; text-align: center !important; text-align-last: center !important;
         }
-
-        .cell-select::-ms-expand { display: none; }
 
         .comment-area {
             width: 100%; height: 100%; font-size: 10px; border: none;
@@ -150,32 +130,19 @@
         .btn-delete { color: #cbd5e1; transition: all 0.2s; }
         tr:hover .btn-delete { color: #f43f5e; }
 
-        .row-checkbox {
-            width: 16px; height: 16px; cursor: pointer;
-            accent-color: #0f172a;
-        }
+        .row-checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: #0f172a; }
+
+        /* Стили для скроллбара панели инструментов на мобильном */
+        .toolbar-scroll::-webkit-scrollbar { height: 4px; }
+        .toolbar-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-<nav class="nav-menu">
-    <div class="nav-links">
-        <a href="{{ route('timesheets.index') }}" class="nav-link {{ request()->routeIs('timesheets.*') ? 'active' : '' }}">Табели</a>
-        <a href="{{ route('employees.index') }}" class="nav-link {{ request()->routeIs('employees.*') ? 'active' : '' }}">Сотрудники</a>
-        <a href="{{ route('positions.index') }}" class="nav-link {{ request()->routeIs('positions.*') ? 'active' : '' }}">Должности</a>
-        <a href="{{ route('statuses.index') }}" class="nav-link {{ request()->routeIs('statuses.*') ? 'active' : '' }}">Статусы</a>
-    </div>
-
-    <div class="flex items-center gap-4">
-        <span class="text-[10px] font-black text-slate-400 uppercase">{{ Auth::user()->name }}</span>
-        <form action="{{ route('logout') }}" method="POST" class="inline">
-            @csrf
-            <button type="submit" class="text-[10px] font-black text-rose-600 uppercase hover:text-rose-800 transition flex items-center gap-1">
-                <i class="fas fa-sign-out-alt"></i> Выйти
-            </button>
-        </form>
-    </div>
-</nav>
+{{-- ДОБАВЛЕНА СТАНДАРТНАЯ НАВИГАЦИЯ В САМЫЙ ВЕРХ --}}
+<div class="mb-10">
+    @include('layouts.navigation')
+</div>
 
 @php
     $displayDate = \Carbon\Carbon::parse($timesheet->start_date);
@@ -194,7 +161,6 @@
         7 => 'ИЮЛЬ', 8 => 'АВГУСТ', 9 => 'СЕНТЯБРЬ', 10 => 'ОКТЯБРЬ', 11 => 'НОЯБРЬ', 12 => 'ДЕКАБРЬ'
     ];
 
-    // Изменено на MB_CASE_TITLE для формата "Иванов Иван Иванович"
     $formatName = function($l, $f, $m) {
         return mb_convert_case(trim("$l $f $m"), MB_CASE_TITLE, "UTF-8");
     };
@@ -202,9 +168,10 @@
     $sortedEmployees = $employees->sortBy('last_name');
 @endphp
 
-<div class="flex justify-between items-center mb-6">
+{{-- ШАПКА ТАБЕЛЯ (Адаптивная: flex-col на мобильных) --}}
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
     <div>
-        <h1 class="text-3xl font-black uppercase tracking-tighter text-slate-900">
+        <h1 class="text-2xl md:text-3xl font-black uppercase tracking-tighter text-slate-900">
             {{ $monthName[$displayDate->month] }} {{ $displayDate->year }}
         </h1>
         <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">
@@ -212,14 +179,16 @@
         </p>
     </div>
 
-    <div class="flex gap-2">
-        <a href="{{ route('timesheets.excel', $timesheet) }}" class="px-4 py-2 bg-emerald-600 text-white rounded font-bold text-[10px] uppercase hover:bg-emerald-700 transition">Excel</a>
-        <a href="{{ route('timesheets.pdf', $timesheet) }}" class="px-4 py-2 bg-rose-600 text-white rounded font-bold text-[10px] uppercase hover:bg-rose-700 transition">PDF</a>
+    <div class="flex gap-2 w-full md:w-auto">
+        <a href="{{ route('timesheets.excel', $timesheet) }}" class="flex-1 md:flex-none text-center px-4 py-2 bg-emerald-600 text-white rounded font-bold text-[10px] uppercase hover:bg-emerald-700 transition">Excel</a>
+        <a href="{{ route('timesheets.pdf', $timesheet) }}" class="flex-1 md:flex-none text-center px-4 py-2 bg-rose-600 text-white rounded font-bold text-[10px] uppercase hover:bg-rose-700 transition">PDF</a>
     </div>
 </div>
 
-<div class="bg-white p-4 border border-slate-200 rounded-lg mb-4 shadow-sm">
-    <div class="flex items-center gap-6 overflow-x-auto whitespace-nowrap">
+{{-- ПАНЕЛЬ УПРАВЛЕНИЯ ТАБЕЛЕМ --}}
+<div class="bg-white p-4 border border-slate-200 rounded-lg mb-4 shadow-sm overflow-hidden">
+    {{-- Добавлен класс toolbar-scroll для прокрутки панели на маленьких экранах --}}
+    <div class="flex items-center gap-6 overflow-x-auto whitespace-nowrap toolbar-scroll pb-2">
         <div class="flex items-end gap-3 border-r border-slate-200 pr-6">
             <form action="{{ route('timesheets.add-employee', $timesheet) }}" method="POST" class="flex gap-2 items-end">
                 @csrf
@@ -228,7 +197,7 @@
                     <select name="employee_id" required class="border border-slate-300 rounded h-9 px-2 text-xs min-w-[200px] outline-none">
                         <option value="">Выбор...</option>
                         @foreach(\App\Models\Employee::where('is_active', true)->orderBy('last_name')->get() as $e)
-                            <option value="{{ $e->id }}">{{ $formatName($e->last_name, $e->first_name, $e->middle_name) }}</option>
+                            <option value="{{ $e->id }}">{{ $e->last_name }} {{ $e->first_name }} {{ $e->middle_name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -266,7 +235,7 @@
                 <select id="mass_employee" class="border border-slate-300 rounded h-9 px-2 text-[10px] bg-white min-w-[180px] outline-none">
                     <option value="all">ПРИМЕНИТЬ КО ВСЕМ СРАЗУ</option>
                     @foreach($sortedEmployees as $emp)
-                        <option value="{{ $emp->id }}">{{ $formatName($emp->last_name, $emp->first_name, $emp->middle_name) }}</option>
+                        <option value="{{ $emp->id }}">{{ $emp->last_name }} {{ $emp->first_name }} {{ $emp->middle_name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -278,6 +247,7 @@
     </div>
 </div>
 
+{{-- ФИЛЬТР --}}
 <div class="mb-4">
     <div class="relative w-full">
         <i class="fas fa-search absolute left-4 top-3.5 text-slate-400 text-xs"></i>
@@ -286,12 +256,14 @@
     </div>
 </div>
 
+{{-- ТАБЛИЦА ТАБЕЛЯ --}}
 <div class="table-container">
     <table id="timesheet-table">
         <thead>
             <tr>
                 <th class="col-num sortable" onclick="sortTable(0, 'int')">№ <i class="fas fa-sort sort-icon"></i></th>
-                <th class="col-fio sortable text-left px-5" onclick="sortTable(1, 'str')">Сотрудник / Должность <i class="fas fa-sort sort-icon"></i></th>
+                {{-- ДОБАВЛЕН КЛАСС sticky-col --}}
+                <th class="col-fio sortable sticky-col text-left px-5" onclick="sortTable(1, 'str')">Сотрудник / Должность <i class="fas fa-sort sort-icon"></i></th>
                 @foreach($dates as $date)
                     <th class="col-date {{ $date->isWeekend() ? 'weekend' : '' }}">
                         <div class="date-cell-header">
@@ -307,10 +279,11 @@
         </thead>
         <tbody>
             @foreach($sortedEmployees as $emp)
-            @php $fullName = $formatName($emp->last_name, $emp->first_name, $emp->middle_name); @endphp
+            @php $fullName = $emp->last_name . ' ' . $emp->first_name . ' ' . $emp->middle_name; @endphp
             <tr data-emp-id="{{ $emp->id }}" data-search="{{ mb_strtolower($fullName) }}">
                 <td class="text-center font-mono text-[10px] text-slate-400 border-r" data-val="{{ $loop->iteration }}">{{ $loop->iteration }}</td>
-                <td class="fio-cell border-r" data-val="{{ $fullName }}">
+                {{-- ДОБАВЛЕН КЛАСС sticky-col --}}
+                <td class="fio-cell border-r sticky-col" data-val="{{ $fullName }}">
                     <span class="fio-text">{{ $fullName }}</span>
                     <span class="pos-text">{{ $emp->position->name ?? '---' }}</span>
                 </td>
@@ -350,18 +323,21 @@
     </table>
 </div>
 
+{{-- ЛЕГЕНДА СТАТУСОВ --}}
 <div class="mt-6 flex flex-wrap gap-5 p-4 bg-white border border-slate-200 rounded-lg shadow-sm">
     @foreach($statuses as $status)
         <div class="flex items-center gap-2">
-            <div class="w-4 h-4 border border-slate-300 rounded-sm" style="background-color: {{ $status->color }}"></div>
+            <div class= "w-4 h-4 border border-slate-300 rounded-sm" style="background-color: {{ $status->color }}"></div>
             <span class="text-[10px] font-bold text-slate-700 uppercase">{{ $status->short_name }} — {{ $status->name }}</span>
         </div>
     @endforeach
 </div>
-{{-- ПОДКЛЮЧЕНИЕ ПОДВАЛА --}}
+
+{{-- ФУТЕР --}}
 <div class="mt-8">
-    @include('partials.footer')
+    @include('layouts.footer')
 </div>
+
 <script>
     function filterTable() {
         const query = document.getElementById('fio-filter').value.toLowerCase();

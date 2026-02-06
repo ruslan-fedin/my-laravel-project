@@ -146,24 +146,9 @@ class TimesheetController extends Controller
     // 9. СОЗДАНИЕ И РЕДАКТИРОВАНИЕ ТАБЕЛЯ
     public function create() { return view('timesheets.create'); }
 
-    public function store(Request $request)
-    {
-        $request->validate(['start_date' => 'required|date', 'end_date' => 'required|date']);
-        $ts = new Timesheet();
-        $ts->start_date = $request->start_date;
-        $ts->end_date = $request->end_date;
-        $ts->save();
-        return redirect()->route('timesheets.show', $ts->id);
-    }
 
     public function edit(Timesheet $timesheet) { return view('timesheets.edit', compact('timesheet')); }
 
-    public function update(Request $request, Timesheet $timesheet)
-    {
-        $request->validate(['start_date' => 'required|date', 'end_date' => 'required|date|after_or_equal:start_date']);
-        $timesheet->update($request->all());
-        return redirect()->route('timesheets.index')->with('success', 'Параметры обновлены');
-    }
 
     public function destroy(Timesheet $timesheet)
     {
@@ -205,4 +190,58 @@ class TimesheetController extends Controller
         $employeeIds = TimesheetItem::where('timesheet_id', $timesheet->id)->pluck('employee_id')->unique();
         return Employee::whereIn('id', $employeeIds)->with('position')->get()->sortBy('last_name');
     }
+
+
+
+
+// 9. СОЗДАНИЕ ТАБЕЛЯ
+    public function store(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date'   => 'required|date|after_or_equal:start_date'
+        ]);
+
+        $ts = new Timesheet();
+        $ts->start_date = $request->start_date;
+        $ts->end_date   = $request->end_date;
+
+        // РЕШЕНИЕ ОШИБКИ ПО ПОЛЮ 'date'
+        // Если база требует это поле, записываем дату начала периода
+        $ts->date = $request->start_date;
+
+        // РЕШЕНИЕ ОШИБКИ ПО ПОЛЮ 'employee_id'
+        // Если поле обязательно в БД, привязываем к первому сотруднику
+        // или к переданному в запросе
+        if ($request->has('employee_id')) {
+            $ts->employee_id = $request->employee_id;
+        } else {
+            $firstEmp = Employee::first();
+            $ts->employee_id = $firstEmp ? $firstEmp->id : 1;
+        }
+
+        $ts->save();
+
+        return redirect()->route('timesheets.show', $ts->id)->with('success', 'Табель успешно создан');
+    }
+
+    // РЕДАКТИРОВАНИЕ ПАРАМЕТРОВ
+    public function update(Request $request, Timesheet $timesheet)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date'   => 'required|date|after_or_equal:start_date'
+        ]);
+
+        $timesheet->update([
+            'start_date'  => $request->start_date,
+            'end_date'    => $request->end_date,
+            'date'        => $request->start_date, // Синхронизируем лишнее поле
+            'employee_id' => $request->employee_id ?? $timesheet->employee_id
+        ]);
+
+        return redirect()->route('timesheets.index')->with('success', 'Параметры обновлены');
+    }
+
+
 }

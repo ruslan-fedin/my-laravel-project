@@ -9,19 +9,22 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-   public function up(): void
+ public function up(): void
 {
-    Schema::table('statuses', function (Blueprint $table) {
-        $table->string('color')->default('#3b82f6')->after('name'); // Синий по умолчанию
-    });
-}
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
+    // Проверяем, есть ли уже такая колонка в таблице
+    if (!Schema::hasColumn('statuses', 'color')) {
         Schema::table('statuses', function (Blueprint $table) {
-            //
+            $table->string('color')->default('#3b82f6')->after('name');
         });
     }
+}
+
+public function down(): void
+{
+    if (Schema::hasColumn('statuses', 'color')) {
+        Schema::table('statuses', function (Blueprint $table) {
+            $table->dropColumn('color');
+        });
+    }
+}
 };

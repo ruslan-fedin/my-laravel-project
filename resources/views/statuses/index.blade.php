@@ -87,4 +87,8 @@
         Текущий администратор: <span class="text-slate-900">{{ Auth::user()->name }}</span>
     </div>
 </div>
+
+  <div class="mt-8">
+@include('layouts.footer')
+    </div>
 @endsection

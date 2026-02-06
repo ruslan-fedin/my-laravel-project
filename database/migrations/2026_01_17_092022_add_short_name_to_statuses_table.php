@@ -9,11 +9,13 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-  public function up(): void
+ public function up(): void
 {
-    Schema::table('statuses', function (Blueprint $table) {
-        $table->string('short_name', 5)->after('name')->nullable();
-    });
+    if (!Schema::hasColumn('statuses', 'short_name')) {
+        Schema::table('statuses', function (Blueprint $table) {
+            $table->string('short_name', 5)->nullable()->after('name');
+        });
+    }
 }
 
     /**

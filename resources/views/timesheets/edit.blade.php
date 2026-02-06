@@ -48,10 +48,9 @@
 
 
     {{-- ПОДКЛЮЧЕНИЕ ПОДВАЛА ЧЕРЕЗ BLADE ШАБЛОН --}}
-    <div class="mt-8">
-        @include('partials.footer')
+      <div class="mt-8">
+@include('layouts.footer')
     </div>
-
 </div> {{-- ЗАКРЫВАЮЩИЙ ТЕГ ОСНОВНОГО КОНТЕЙНЕРА (если он был открыт в начале страницы или в макете) --}}
 
 </body>

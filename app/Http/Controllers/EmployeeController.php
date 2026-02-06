@@ -2,192 +2,264 @@
 
 namespace App\Http\Controllers;
 
+use Storage;
 use App\Models\Employee;
 use App\Models\Position;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Maatwebsite\Excel\Facades\Excel;
 
 class EmployeeController extends Controller
 {
     /**
-     * Список активных сотрудников
+     * Общий список всех сотрудников (ТОЛЬКО ЖИВЫЕ)
      */
-    public function index()
+    public function index(Request $request)
     {
-        $employees = Employee::active()
-            ->with('position')
+        // Используем whereNull('deleted_at'), чтобы ГАРАНТИРОВАННО скрыть удаленных
+        $employees = Employee::with('position')
+            ->whereNull('deleted_at')
+            ->when($request->search, function($query, $search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('last_name', 'LIKE', "%{$search}%")
+                      ->orWhere('first_name', 'LIKE', "%{$search}%")
+                      ->orWhere('middle_name', 'LIKE', "%{$search}%");
+                });
+            })
             ->orderBy('last_name')
-            ->orderBy('first_name')
             ->paginate(20);
 
         return view('employees.index', compact('employees'));
     }
 
     /**
-     * Форма создания сотрудника
+     * Список удаленных сотрудников (ТОЛЬКО АРХИВ)
      */
-    public function create()
-    {
-        $positions = Position::orderBy('name')->get();
-        return view('employees.create', compact('positions'));
-    }
+   /**
+     * Список удаленных сотрудников (Архив)
+     * ГАРАНТИРОВАННО выводит только тех, у кого заполнена дата удаления.
+     */
+  public function archive()
+{
+    // Теперь мы точно знаем, что эти данные есть
+    $employees = Employee::onlyTrashed()
+        ->with('position')
+        ->orderBy('deleted_at', 'desc')
+        ->get();
 
+    return view('employees.archive', compact('employees'));
+}
     /**
-     * Сохранение нового сотрудника
+     * СОХРАНЕНИЕ ИЗМЕНЕНИЙ
      */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'last_name' => 'required|string|max:100',
-            'first_name' => 'required|string|max:100',
-            'middle_name' => 'nullable|string|max:100',
-            'position_id' => 'required|exists:positions,id',
-            'birth_date' => 'nullable|date',
-            'hire_date' => 'nullable|date',
-            'phone' => 'nullable|string|max:50',
-            'is_active' => 'boolean',
-        ]);
+public function update(Request $request, $id)
+{
+    $employee = \App\Models\Employee::findOrFail($id);
 
-        $employee = Employee::create($validated);
+    $request->validate([
+        'last_name'  => 'required|string|max:255',
+        'first_name' => 'required|string|max:255',
+        'photo'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+    ]);
 
-        return redirect()->route('employees.show', $employee)
-            ->with('success', 'Сотрудник успешно добавлен.');
-    }
-
-    /**
-     * Просмотр сотрудника
-     */
-    public function show(Employee $employee)
-    {
-        // Загружаем даже удаленных сотрудников
-        $employee->load(['position', 'timesheetItems' => function($query) {
-            $query->latest()->limit(50);
-        }]);
-
-        return view('employees.show', compact('employee'));
-    }
-
-    /**
-     * Форма редактирования
-     */
-    public function edit(Employee $employee)
-    {
-        $positions = Position::orderBy('name')->get();
-        return view('employees.edit', compact('employee', 'positions'));
-    }
-
-    /**
-     * Обновление сотрудника
-     */
-    public function update(Request $request, Employee $employee)
-    {
-        $validated = $request->validate([
-            'last_name' => 'required|string|max:100',
-            'first_name' => 'required|string|max:100',
-            'middle_name' => 'nullable|string|max:100',
-            'position_id' => 'required|exists:positions,id',
-            'birth_date' => 'nullable|date',
-            'hire_date' => 'nullable|date',
-            'phone' => 'nullable|string|max:50',
-            'is_active' => 'boolean',
-        ]);
-
-        $employee->update($validated);
-
-        return redirect()->route('employees.show', $employee)
-            ->with('success', 'Данные сотрудника обновлены.');
-    }
-
-    /**
-     * Мягкое удаление (в архив)
-     */
-    public function destroy(Employee $employee)
-    {
-        try {
-            DB::beginTransaction();
-
-            // Сохраняем имя для сообщения
-            $employeeName = $employee->full_name;
-
-            // Мягкое удаление
-            $employee->delete();
-
-            DB::commit();
-
-            return redirect()->route('employees.index')
-                ->with('success', "Сотрудник \"{$employeeName}\" перемещен в архив. Записи в табеле сохранены.");
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Ошибка при удалении сотрудника: ' . $e->getMessage());
-
-            return back()->with('error', 'Произошла ошибка при удалении сотрудника.');
+    if ($request->hasFile('photo')) {
+        // 1. Удаляем старое фото из папки public/uploads/employees
+        if ($employee->photo && file_exists(public_path($employee->photo))) {
+            unlink(public_path($employee->photo));
         }
+
+        // 2. Генерируем уникальное имя файла
+        $fileName = time() . '.' . $request->photo->extension();
+
+        // 3. Перемещаем файл НАПРЯМУЮ в public/uploads/employees
+        $request->photo->move(public_path('uploads/employees'), $fileName);
+
+        // 4. Записываем в базу чистый путь
+        $employee->photo = 'uploads/employees/' . $fileName;
     }
 
+    $employee->last_name   = $request->last_name;
+    $employee->first_name  = $request->first_name;
+    $employee->middle_name = $request->middle_name;
+    $employee->position_id = $request->position_id;
+    $employee->birth_date  = $request->birth_date;
+    $employee->hire_date   = $request->hire_date;
+    $employee->phone       = $request->phone;
+    $employee->is_active   = $request->is_active;
+    $employee->status      = $request->is_active ? 'active' : 'fired';
+
+    $employee->save();
+
+    return redirect()->route('employees.index')->with('success', 'Данные обновлены');
+}
     /**
-     * Список удаленных сотрудников (архив)
+     * Удаление сотрудника (Soft Delete)
      */
-    public function trashed()
+    public function destroy($id)
     {
-        $employees = Employee::onlyTrashed()
-            ->with('position')
-            ->orderBy('deleted_at', 'desc')
-            ->paginate(20);
+        $employee = Employee::findOrFail($id);
+        $employee->delete(); // Устанавливает deleted_at
 
-        return view('employees.trashed', compact('employees'));
+        return redirect()->route('employees.index')
+            ->with('success', "Сотрудник {$employee->last_name} перемещен в архив.");
     }
 
     /**
-     * Восстановление сотрудника из архива
+     * Восстановление сотрудника
      */
     public function restore($id)
     {
-        $employee = Employee::onlyTrashed()->findOrFail($id);
+        $employee = Employee::withTrashed()->findOrFail($id);
+        $employee->restore(); // Очищает deleted_at
 
-        try {
-            DB::beginTransaction();
-
-            $employee->restore();
-
-            DB::commit();
-
-            return redirect()->route('employees.trashed')
-                ->with('success', "Сотрудник \"{$employee->full_name}\" восстановлен из архива.");
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Ошибка при восстановлении сотрудника: ' . $e->getMessage());
-
-            return back()->with('error', 'Произошла ошибка при восстановлении сотрудника.');
-        }
+        return redirect()->route('employees.archive')
+            ->with('success', "Сотрудник {$employee->last_name} восстановлен.");
     }
 
     /**
-     * Полное удаление из архива
+     * Метод просмотра (show)
      */
-    public function forceDelete($id)
+    public function show($id)
     {
-        $employee = Employee::onlyTrashed()->findOrFail($id);
+        $employee = Employee::withTrashed()->with(['position', 'leader'])->findOrFail($id);
 
-        try {
-            // Проверяем наличие записей в табеле
-            if ($employee->timesheetItems()->exists()) {
-                return back()->with('error',
-                    'Невозможно удалить сотрудника, так как имеются связанные записи в табеле. ' .
-                    'Сначала удалите или переназначьте записи в табеле.');
+        $movements = collect(); $history = collect(); $documents = collect(); $trainings = collect();
+        return view('employees.show', compact('employee', 'movements', 'history', 'documents', 'trainings'));
+    }
+
+    /**
+     * Метод редактирования (edit)
+     */
+    public function edit($id)
+    {
+        $employee = Employee::withTrashed()->findOrFail($id);
+        $positions = Position::orderBy('name')->get();
+        $leaders = Employee::whereNull('deleted_at')->where('id', '!=', $id)->get();
+
+        return view('employees.edit', compact('employee', 'positions', 'leaders'));
+    }
+
+    /**
+     * Остальные методы бригад (без изменений)
+     */
+    public function showBrigades()
+    {
+        $masterIds = Position::whereRaw('LOWER(name) LIKE ?', ['%мастер%'])->pluck('id')->toArray();
+        $brigadierIds = Position::whereRaw('LOWER(name) LIKE ?', ['%бриг%'])->pluck('id')->toArray();
+
+        $masters = Employee::whereIn('position_id', $masterIds)->whereNull('deleted_at')->orderBy('last_name')->get();
+        $allBrigadiers = Employee::whereIn('position_id', $brigadierIds)->whereNull('deleted_at')->with(['subordinates'])->get();
+        $freeWorkers = Employee::whereNotIn('position_id', array_merge($masterIds, $brigadierIds))->whereNull('deleted_at')->get();
+        $allLeaders = Employee::whereIn('position_id', array_merge($masterIds, $brigadierIds))->whereNull('deleted_at')->get();
+
+        $masterIdsArr = $masters->pluck('id')->toArray();
+        $orphanBrigadiers = $allBrigadiers->filter(fn($br) => !in_array($br->parent_id, $masterIdsArr));
+
+        return view('brigades.index', compact('masters', 'allBrigadiers', 'orphanBrigadiers', 'freeWorkers', 'allLeaders'));
+    }
+
+    public function updateLeader(Request $request)
+    {
+        $employee = Employee::findOrFail($request->employee_id);
+        $employee->parent_id = $request->parent_id ?: null;
+        $employee->save();
+        return back();
+    }
+
+    public function startVacation(Request $request)
+    {
+        $brigadier = Employee::findOrFail($request->absentee_id);
+        $brigadier->status = 'vacation';
+        $brigadier->substitute_id = $request->substitute_id;
+        $brigadier->save();
+        return back();
+    }
+
+    public function returnVacation(Request $request)
+    {
+        $brigadier = Employee::findOrFail($request->brigadier_id);
+        $brigadier->status = 'active';
+        $brigadier->substitute_id = null;
+        $brigadier->save();
+        return back();
+    }
+
+    public function updateLocation(Request $request)
+    {
+        DB::table('brigade_locations')->updateOrInsert(
+            ['brigadier_id' => $request->brigadier_id],
+            ['location_name' => $request->location_name, 'updated_at' => now()]
+        );
+        return response()->json(['success' => true]);
+    }
+
+
+    public function showImportForm()
+{
+    return view('employees.import');
+}
+
+
+public function forceDelete($id)
+{
+    $employee = Employee::withTrashed()->findOrFail($id);
+    $employee->forceDelete(); // Это физическое удаление из таблицы
+
+    return back()->with('success', 'Сотрудник полностью удален из системы.');
+}
+
+public function import(Request $request)
+{
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls,csv'
+    ]);
+
+    $data = \Maatwebsite\Excel\Facades\Excel::toArray([], $request->file('file'));
+    $rows = $data[0];
+    $imported = 0;
+
+    // Получаем ID должности по умолчанию (например, "Рабочий"), чтобы не было пустоты
+    $defaultPosition = \App\Models\Position::firstOrCreate(['name' => 'Рабочий ОЗХ']);
+
+    foreach ($rows as $row) {
+        // 1. Ищем ФИО (обычно 2 или 3 колонка)
+        $fullName = trim($row[2] ?? $row[1] ?? '');
+
+        // 2. Ищем название должности (обычно 1 или 2 колонка, например "раб.")
+        $posName = trim($row[1] ?? $row[0] ?? '');
+
+        if (empty($fullName) || in_array($fullName, ['ФИО', 'Итого', '№', 'Период'])) continue;
+
+        $parts = explode(' ', $fullName);
+        if (count($parts) < 2) continue;
+
+        // Ищем должность в базе по названию из файла
+        // Если в файле "раб.", а в базе "Рабочий", можно добавить проверку через match
+        $positionId = $defaultPosition->id;
+        if (!empty($posName)) {
+            $foundPosition = \App\Models\Position::where('name', 'like', '%' . $posName . '%')->first();
+            if ($foundPosition) {
+                $positionId = $foundPosition->id;
             }
+        }
 
-            $employeeName = $employee->full_name;
-            $employee->forceDelete();
+        $exists = \App\Models\Employee::where('last_name', $parts[0])
+            ->where('first_name', $parts[1])
+            ->exists();
 
-            return redirect()->route('employees.trashed')
-                ->with('success', "Сотрудник \"{$employeeName}\" полностью удален из системы.");
-
-        } catch (\Exception $e) {
-            Log::error('Ошибка при полном удалении сотрудника: ' . $e->getMessage());
-            return back()->with('error', 'Произошла ошибка при удалении сотрудника.');
+        if (!$exists) {
+            \App\Models\Employee::create([
+                'last_name'   => $parts[0],
+                'first_name'  => $parts[1],
+                'middle_name' => $parts[2] ?? '',
+                'position_id' => $positionId, // Теперь здесь будет ID, а не пустота
+                'is_active'   => true,
+            ]);
+            $imported++;
         }
     }
+
+    return redirect()->route('employees.index')->with('success', "Импортировано: $imported. Должности назначены.");
+}
 }

@@ -33,10 +33,11 @@
         </div>
     </div>
 
-    {{-- ПОДКЛЮЧЕНИЕ ПОДВАЛА --}}
-    <div class="w-full max-w-6xl">
-        @include('partials.footer')
+       <div class="mt-8">
+@include('layouts.footer')
     </div>
+</div> {{-- Закрытие index-page-wrapper --}}
+
 
 </body>
 </html>
