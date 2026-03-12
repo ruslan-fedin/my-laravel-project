@@ -3,45 +3,77 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 
 class AuthController extends Controller
 {
-    public function showLogin() { return view('auth.login'); }
-    public function showRegister() { return view('auth.register'); }
-    public function showForgotPassword() { return view('auth.forgot-password'); }
+    /**
+     * Показать форму входа
+     */
+    public function showLogin()
+    {
+        if (auth()->check()) {
+            return redirect()->route('dashboard');
+        }
 
-    public function login(Request $request) {
+        return view('auth.login');
+    }
+
+    /**
+     * Обработка входа
+     */
+    public function login(Request $request)
+    {
         $credentials = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
-        if (Auth::attempt($credentials)) {
+
+        if (auth()->attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
-            return redirect()->intended('timesheets');
+
+            return redirect()->intended(route('dashboard'));
         }
-        return back()->withErrors(['email' => 'Ошибка доступа']);
+
+        return back()->withErrors([
+            'email' => 'Неверный email или пароль',
+        ])->onlyInput('email');
     }
 
-    public function register(Request $request) {
+    /**
+     * Выход из системы
+     */
+    public function logout(Request $request)
+    {
+        auth()->logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login');
+    }
+
+    /**
+     * Показать форму восстановления пароля
+     */
+    public function showForgotPassword()
+    {
+        return view('auth.forgot-password');
+    }
+
+    /**
+     * Отправить ссылку на сброс пароля
+     */
+    public function sendResetLink(Request $request)
+    {
         $request->validate([
-            'name' => 'required|string|max:255', // ФИО полностью
-            'email' => 'required|string|email|unique:users',
-            'password' => 'required|string|min:4',
+            'email' => 'required|email',
         ]);
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
-        Auth::login($user);
-        return redirect('/');
-    }
 
-    public function logout(Request $request) {
-        Auth::logout();
-        return redirect('/login');
+        // Логика отправки...
+
+        return back()->with('success', 'Ссылка отправлена на email');
     }
 }

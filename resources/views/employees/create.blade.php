@@ -1,148 +1,129 @@
 @extends('layouts.app')
 
 @section('content')
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/imask"></script>
 
-<style>
-    /* Адаптивные отступы, как в редакторе табеля */
-    .content-wrapper {
-        padding: 0 120px 40px 120px;
-        font-family: 'Inter', sans-serif;
-    }
-    @media (max-width: 1024px) {
-        .content-wrapper { padding: 0 10px 20px 10px; }
-    }
-
-    .card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); overflow: hidden; }
-    .filter-input { height: 44px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 12px 0 40px; font-size: 11px; font-weight: 800; outline: none; text-transform: uppercase; letter-spacing: 0.05em; }
-    .filter-input:focus { border-color: #0f172a; }
-
-    table { border-collapse: separate; border-spacing: 0; width: 100%; }
-    th { background: #f8fafc; font-weight: 900; text-transform: uppercase; color: #475569; font-size: 10px; letter-spacing: 0.05em; padding: 12px 16px; border-bottom: 2px solid #e2e8f0; }
-    td { border-bottom: 1px solid #f1f5f9; padding: 12px 16px; vertical-align: middle; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background-color: #f8fafc; transition: background-color 0.2s; }
-</style>
-
-<div class="content-wrapper mt-6">
-    {{-- ЗАГОЛОВОК И КНОПКА ДОБАВЛЕНИЯ --}}
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
-        <div>
-            <h1 class="text-2xl font-black text-slate-900 uppercase tracking-tight">
-                {{ request()->routeIs('employees.archive') ? 'Архив сотрудников' : 'Сотрудники' }}
-            </h1>
-            <p class="text-slate-500 font-bold text-xs uppercase mt-1">
-                {{ request()->routeIs('employees.archive') ? 'Список удаленных из основной базы' : 'Управление кадровым составом' }}
-            </p>
-        </div>
-
-        <a href="{{ route('employees.create') }}" class="bg-slate-900 text-white px-6 h-11 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-black transition shadow-lg flex items-center justify-center gap-2 w-full md:w-auto">
-            <i class="fas fa-plus"></i> <span>Добавить сотрудника</span>
+<div class="max-w-[1440px] mx-auto px-[120px] py-10">
+    {{-- Навигация назад --}}
+    <div class="mb-6">
+        <a href="{{ route('brigades.index') }}" class="text-[10px] font-black uppercase text-slate-400 hover:text-blue-600 transition-colors">
+            <i class="fas fa-arrow-left mr-1"></i> Вернуться к структуре
         </a>
     </div>
 
-    {{-- ПАНЕЛЬ УПРАВЛЕНИЯ (ВКЛАДКИ И ПОИСК) --}}
-    <div class="card p-4 mb-6 bg-slate-50/50">
-        <div class="flex flex-col xl:flex-row gap-4 justify-between items-center">
-            {{-- Вкладки --}}
-            <div class="flex gap-2 w-full xl:w-auto bg-white p-1 rounded-lg border border-slate-200">
-                <a href="{{ route('employees.index') }}"
-                   class="flex-1 xl:flex-none px-5 py-2.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all flex justify-center items-center gap-2 {{ request()->routeIs('employees.index') ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600' }}">
-                    <i class="fas fa-users"></i> Активный состав
-                </a>
-                <a href="{{ route('employees.archive') }}"
-                   class="flex-1 xl:flex-none px-5 py-2.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all flex justify-center items-center gap-2 {{ request()->routeIs('employees.archive') ? 'bg-rose-600 text-white shadow-md' : 'text-slate-400 hover:bg-rose-50 hover:text-rose-600' }}">
-                    <i class="fas fa-archive"></i> Архив
-                </a>
-            </div>
+    <div class="bg-white shadow-xl rounded-[2rem] overflow-hidden border border-slate-200">
+        {{-- Заголовок --}}
+        <div class="bg-slate-900 px-8 py-6">
+            <h2 class="text-xl font-black uppercase tracking-tight text-white">
+                Регистрация нового сотрудника
+            </h2>
+        </div>
 
-            {{-- Живой поиск --}}
-            <div class="relative w-full xl:w-1/3">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">
-                    <i class="fas fa-search text-xs"></i>
-                </span>
-                <input type="text"
-                       id="live-search"
-                       placeholder="Поиск (Фамилия Имя Отчество)..."
-                       class="filter-input w-full placeholder:text-slate-300">
-                <div id="search-loader" class="hidden absolute right-3 top-3">
-                    <i class="fas fa-circle-notch fa-spin text-slate-400 text-xs"></i>
+        <form action="{{ route('employees.store') }}" method="POST" enctype="multipart/form-data" class="p-8 space-y-8">
+            @csrf
+
+            <div class="flex flex-col md:flex-row gap-10">
+                {{-- БЛОК ФОТО --}}
+                <div class="w-full md:w-1/3 flex flex-col items-center border-r border-slate-100 pr-10">
+                    <label class="block text-[9px] font-black uppercase text-slate-400 mb-4 text-center w-full tracking-widest">Фотография сотрудника</label>
+                    <div class="w-52 h-64 rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden flex items-center justify-center bg-slate-50 mb-6 relative shadow-inner">
+                        <div id="placeholder" class="text-center p-4">
+                            <i class="fas fa-user-plus text-5xl text-slate-200 mb-3"></i>
+                            <p class="text-[9px] text-slate-400 uppercase font-black">Нажмите для выбора</p>
+                        </div>
+                        <img src="" id="preview" class="hidden w-full h-full object-cover">
+                    </div>
+                    <label class="cursor-pointer bg-blue-600 text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase hover:bg-blue-700 transition-all w-full text-center shadow-lg shadow-blue-100">
+                        <i class="fas fa-camera mr-2"></i> Выбрать фото
+                        <input type="file" name="photo" id="photo-input" class="hidden" accept="image/*">
+                    </label>
+                </div>
+
+                {{-- БЛОК ДАННЫХ --}}
+                <div class="w-full md:w-2/3 space-y-8">
+                    {{-- ФИО ПОЛНОСТЬЮ --}}
+                    <div class="grid grid-cols-1 gap-6">
+                        <div>
+                            <label class="block text-[9px] font-black uppercase text-slate-400 mb-2 ml-1">Фамилия</label>
+                            <input type="text" name="last_name" required placeholder="ИВАНОВ"
+                                   class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold uppercase focus:border-blue-500 outline-none transition-all shadow-sm">
+                        </div>
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-[9px] font-black uppercase text-slate-400 mb-2 ml-1">Имя</label>
+                                <input type="text" name="first_name" required placeholder="ИВАН"
+                                       class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold uppercase focus:border-blue-500 outline-none transition-all shadow-sm">
+                            </div>
+                            <div>
+                                <label class="block text-[9px] font-black uppercase text-slate-400 mb-2 ml-1">Отчество</label>
+                                <input type="text" name="middle_name" placeholder="ИВАНОВИЧ"
+                                       class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold uppercase focus:border-blue-500 outline-none transition-all shadow-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-6 border-t border-slate-100 pt-8">
+                        <div>
+                            <label class="block text-[9px] font-black uppercase text-slate-400 mb-2 ml-1">Дата рождения</label>
+                            <input type="date" name="birth_date"
+                                   class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-black uppercase text-slate-400 mb-2 ml-1">Дата приема</label>
+                            <input type="date" name="hire_date" value="{{ date('Y-m-d') }}"
+                                   class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-black uppercase text-slate-400 mb-2 ml-1">Телефон</label>
+                            <input type="text" id="phone-mask" name="phone" placeholder="+7 (___) ___-__-__"
+                                   class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6 border-t border-slate-100 pt-8">
+                        <div>
+                            <label class="block text-[9px] font-black uppercase text-slate-400 mb-2 ml-1">Должность</label>
+                            <select name="position_id" required class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold uppercase outline-none appearance-none">
+                                <option value="" disabled selected>Выберите должность</option>
+                                @foreach($positions as $pos)
+                                    <option value="{{ $pos->id }}">{{ $pos->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    {{-- ТАБЛИЦА --}}
-    <div class="card shadow-sm" id="table-container">
-        @if(session('success'))
-            <div class="bg-emerald-50 border-b border-emerald-100 text-emerald-600 px-6 py-4 text-[11px] font-black uppercase tracking-wide flex items-center gap-2">
-                <i class="fa-solid fa-check-circle"></i> {{ session('success') }}
+            {{-- НИЖНЯЯ ПАНЕЛЬ --}}
+            <div class="pt-8 flex justify-between items-center border-t border-slate-100">
+                <a href="{{ route('brigades.index') }}" class="text-slate-400 text-[10px] font-black uppercase hover:text-slate-600 transition-colors">Отмена</a>
+                <button type="submit" class="bg-blue-600 text-white px-12 py-4 rounded-xl text-xs font-black uppercase hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all active:scale-95">
+                    Создать сотрудника <i class="fas fa-plus-circle ml-2"></i>
+                </button>
             </div>
-        @endif
-
-        <div class="overflow-x-auto">
-            <table id="employees-table">
-                <thead>
-                    <tr>
-                        <th class="w-16 text-center border-r border-slate-200">№</th>
-                        <th class="w-20 text-center border-r border-slate-200">Фото</th>
-                        <th class="text-left border-r border-slate-200">Фамилия Имя Отчество полностью</th>
-                        <th class="text-left border-r border-slate-200">Должность</th>
-                        <th class="text-center w-32 border-r border-slate-200">Статус</th>
-                        <th class="text-right w-48">Управление</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 text-[13px] text-slate-700 font-semibold">
-                    @include('employees.partials.table_rows', ['employees' => $employees])
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div id="pagination-container" class="mt-8">
-        {{ $employees->links() }}
-    </div>
-
-    <div class="mt-8 border-t border-slate-200 pt-6">
-        @include('layouts.footer')
+        </form>
     </div>
 </div>
 
 <script>
-    document.getElementById('live-search').addEventListener('input', function(e) {
-        const query = e.target.value;
-        const loader = document.getElementById('search-loader');
-        loader.classList.remove('hidden');
+    document.addEventListener('DOMContentLoaded', function () {
+        const phoneInput = document.getElementById('phone-mask');
+        if (phoneInput) { IMask(phoneInput, { mask: '{+7} (000) 000-00-00' }); }
 
-        fetch(`{{ url()->current() }}?search=${query}`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(response => response.text())
-        .then(data => {
-            const parser = new DOMParser();
-            const htmlDoc = parser.parseFromString(data, 'text/html');
+        const photoInput = document.getElementById('photo-input');
+        const preview = document.getElementById('preview');
+        const placeholder = document.getElementById('placeholder');
 
-            // Обновляем тело таблицы
-            const newTbody = htmlDoc.querySelector('#employees-table tbody');
-            const currentTbody = document.querySelector('#employees-table tbody');
-            if (newTbody && currentTbody) {
-                currentTbody.innerHTML = newTbody.innerHTML;
-            }
-
-            // Обновляем пагинацию
-            const newPagination = htmlDoc.querySelector('#pagination-container');
-            const currentPagination = document.querySelector('#pagination-container');
-            if (newPagination && currentPagination) {
-                currentPagination.innerHTML = newPagination.innerHTML;
-            }
-
-            loader.classList.add('hidden');
-        })
-        .catch(error => {
-            console.error('Ошибка поиска:', error);
-            loader.classList.add('hidden');
-        });
+        if (photoInput) {
+            photoInput.onchange = function() {
+                const [file] = this.files;
+                if (file) {
+                    preview.src = URL.createObjectURL(file);
+                    preview.classList.remove('hidden');
+                    if (placeholder) placeholder.classList.add('hidden');
+                }
+            };
+        }
     });
 </script>
 @endsection

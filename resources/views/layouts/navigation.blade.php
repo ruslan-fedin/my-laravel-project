@@ -13,7 +13,6 @@
     .nav-link:hover { color: #0f172a; }
     .nav-link.active { color: #3b82f6; }
 
-    /* Ваши отступы: 12px мобильные / 120px ПК */
     .indent-area {
         padding-left: 12px;
         padding-right: 12px;
@@ -47,6 +46,49 @@
         opacity: 1;
         border-top: 1px solid #e2e8f0;
     }
+
+    /* Dropdown меню */
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+    .dropdown-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        min-width: 220px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        border-radius: 12px;
+        padding: 8px;
+        z-index: 100;
+        border: 1px solid #e2e8f0;
+    }
+    .dropdown:hover .dropdown-menu {
+        display: block;
+    }
+    .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        text-decoration: none;
+        color: #475569;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+    .dropdown-item:hover {
+        background: #f1f5f9;
+        color: #3b82f6;
+    }
+    .dropdown-item i {
+        width: 16px;
+        text-align: center;
+    }
 </style>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -64,6 +106,24 @@
                 <a href="/employees" class="nav-link {{ request()->is('employees*') ? 'active' : '' }}">Сотрудники</a>
                 <a href="{{ route('employees.import.form') }}" class="nav-link {{ request()->routeIs('employees.import.form') ? 'active' : '' }}">Импорт</a>
                 <a href="{{ route('brigades.index') }}" class="nav-link {{ request()->is('brigades*') ? 'active' : '' }}">Структура</a>
+
+                {{-- ВЫПАДАЮЩЕЕ МЕНЮ ОТПУСКА --}}
+                <div class="dropdown">
+                    <a href="{{ route('vacations.timeline') }}" class="nav-link {{ request()->routeIs('vacations.*') || request()->routeIs('notifications.*') ? 'active' : '' }}" style="cursor: pointer;">
+                        <i class="fas fa-chart-gantt mr-1"></i>Отпуска <i class="fas fa-chevron-down text-[8px] ml-1"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="{{ route('vacations.timeline') }}" class="dropdown-item {{ request()->routeIs('vacations.timeline') ? 'text-blue-600 bg-blue-50' : '' }}">
+                            <i class="fas fa-chart-gantt"></i>
+                            <span>График отпусков</span>
+                        </a>
+                        <a href="{{ route('notifications.settings') }}" class="dropdown-item {{ request()->routeIs('notifications.*') ? 'text-blue-600 bg-blue-50' : '' }}">
+                            <i class="fas fa-bell"></i>
+                            <span>Уведомления</span>
+                        </a>
+                    </div>
+                </div>
+
                 <a href="/positions" class="nav-link {{ request()->is('positions*') ? 'active' : '' }}">Должности</a>
                 <a href="/statuses" class="nav-link {{ request()->is('statuses*') ? 'active' : '' }}">Статусы</a>
             </div>
@@ -72,44 +132,37 @@
 
         <div class="flex items-center gap-4">
             @auth
-    @php
-        $parts = explode(' ', trim(Auth::user()->name));
-        $lastName = $parts[0] ?? '';
-        $firstName = $parts[1] ?? '';
-        $middleName = $parts[2] ?? '';
-    @endphp
+            @php
+                $parts = explode(' ', trim(Auth::user()->name));
+                $lastName = $parts[0] ?? '';
+                $firstName = $parts[1] ?? '';
+                $middleName = $parts[2] ?? '';
+            @endphp
 
-    <div class="flex items-center gap-4">
-        {{-- Текстовый блок ФИО --}}
-        <div class="flex flex-col items-end leading-none py-1">
-            {{-- Фамилия: максимально жирная, глубокий черный цвет --}}
-            <span class="text-[13px] font-black text-slate-950 uppercase tracking-wider mb-1">
-                {{ $lastName }}
-            </span>
+            <div class="flex items-center gap-4">
+                <div class="flex flex-col items-end leading-none py-1">
+                    <span class="text-[13px] font-black text-slate-950 uppercase tracking-wider mb-1">
+                        {{ $lastName }}
+                    </span>
+                    <span class="text-[10px] font-extrabold text-blue-600/80 uppercase tracking-tight">
+                        {{ $firstName }} {{ $middleName }}
+                    </span>
+                </div>
 
-            {{-- Имя Отчество: более легкий шрифт, акцентный серо-синий цвет --}}
-            <span class="text-[10px] font-extrabold text-blue-600/80 uppercase tracking-tight">
-                {{ $firstName }} {{ $middleName }}
-            </span>
-        </div>
+                <div class="hidden sm:block h-10 w-[2px] bg-gradient-to-b from-slate-100 via-slate-300 to-slate-100 mx-1"></div>
 
-        {{-- Разделитель с легким градиентом --}}
-        <div class="hidden sm:block h-10 w-[2px] bg-gradient-to-b from-slate-100 via-slate-300 to-slate-100 mx-1"></div>
+                <form method="POST" action="{{ route('logout') }}" class="hidden sm:block">
+                    @csrf
+                    <button type="submit" class="group flex items-center justify-center w-10 h-10 rounded-xl hover:bg-red-50 transition-all duration-300">
+                        <i class="fa-solid fa-right-from-bracket text-slate-400 group-hover:text-red-500 text-lg"></i>
+                    </button>
+                </form>
 
-        {{-- Кнопка выхода с эффектом при наведении --}}
-        <form method="POST" action="{{ route('logout') }}" class="hidden sm:block">
-            @csrf
-            <button type="submit" class="group flex items-center justify-center w-10 h-10 rounded-xl hover:bg-red-50 transition-all duration-300">
-                <i class="fa-solid fa-right-from-bracket text-slate-400 group-hover:text-red-500 text-lg"></i>
-            </button>
-        </form>
-
-        {{-- Мобильная кнопка меню --}}
-        <button onclick="toggleMenu()" class="lg:hidden w-11 h-11 flex items-center justify-center rounded-xl bg-slate-900 text-white shadow-lg shadow-slate-200 active:scale-95 transition-transform">
-            <i id="menu-icon" class="fa-solid fa-bars text-lg"></i>
-        </button>
-    </div>
-@endauth
+                <button onclick="toggleMenu()" class="lg:hidden w-11 h-11 flex items-center justify-center rounded-xl bg-slate-900 text-white shadow-lg shadow-slate-200 active:scale-95 transition-transform">
+                    <i id="menu-icon" class="fa-solid fa-bars text-lg"></i>
+                </button>
+            </div>
+            @endauth
         </div>
     </div>
 
@@ -121,6 +174,19 @@
             <a href="/employees" class="px-4 py-3 text-[11px] font-black uppercase {{ request()->is('employees*') ? 'text-blue-600 bg-blue-50' : 'text-slate-600' }}">Сотрудники</a>
             <a href="{{ route('employees.import.form') }}" class="px-4 py-3 text-[11px] font-black uppercase {{ request()->routeIs('employees.import.form') ? 'text-blue-600 bg-blue-50' : 'text-slate-600' }}">Импорт</a>
             <a href="{{ route('brigades.index') }}" class="px-4 py-3 text-[11px] font-black uppercase {{ request()->is('brigades*') ? 'text-blue-600 bg-blue-50' : 'text-slate-600' }}">Структура</a>
+
+            <div class="h-px bg-slate-100 my-2 mx-4"></div>
+
+            {{-- МОБИЛЬНОЕ МЕНЮ ОТПУСКА --}}
+            <div class="px-4 py-2">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">📅 Отпуска</p>
+                <a href="{{ route('vacations.timeline') }}" class="block px-4 py-2 text-[11px] font-bold uppercase {{ request()->routeIs('vacations.timeline') ? 'text-blue-600 bg-blue-50 rounded-lg' : 'text-slate-600' }}">
+                    <i class="fas fa-chart-gantt mr-2"></i>График отпусков
+                </a>
+                <a href="{{ route('notifications.settings') }}" class="block px-4 py-2 text-[11px] font-bold uppercase {{ request()->routeIs('notifications.*') ? 'text-blue-600 bg-blue-50 rounded-lg' : 'text-slate-600' }}">
+                    <i class="fas fa-bell mr-2"></i>Уведомления
+                </a>
+            </div>
 
             <div class="h-px bg-slate-100 my-2 mx-4"></div>
 

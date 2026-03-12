@@ -1,8 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="{{ asset('vendor/tailwind.min.js') }}"></script>
+<link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
+<link rel="stylesheet" href="{{ asset('fonts/inter/inter.css') }}">
+<script src="{{ asset('vendor/xlsx.bundle.js') }}"></script><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
     /* Базовые настройки шрифтов и фона */
@@ -210,10 +212,7 @@
                 <div class="text-[10px] font-black uppercase text-slate-400">
                     Оператор: <span class="text-slate-900 ml-1">{{ Auth::user()->name }}</span>
                 </div>
-            </div>
-
-            @include('layouts.footer')
-        </div>
+           
 
     </div>
 </div>

@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Авторизация в системе</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="{{ asset('vendor/tailwind.min.js') }}"></script>
+<link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
+<link rel="stylesheet" href="{{ asset('fonts/inter/inter.css') }}">
+<script src="{{ asset('vendor/xlsx.bundle.js') }}"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
         .auth-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }

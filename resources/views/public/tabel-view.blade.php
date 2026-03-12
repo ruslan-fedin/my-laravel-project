@@ -4,130 +4,172 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Табель: {{ $timesheet->note ?? 'Просмотр' }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="{{ asset('vendor/tailwind.min.js') }}"></script>
+    <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('fonts/inter/inter.css') }}">
     <style>
         body {
-            background-color: #f8fafc;
-            padding: 20px 120px 40px 120px;
+            background-color: #f1f5f9;
+            padding: 40px 120px;
             font-family: 'Inter', sans-serif;
-            color: #1e293b;
         }
-        @media (max-width: 1024px) { body { padding: 15px 12px; } }
 
-        .card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 1rem; overflow: hidden; }
-        .table-container { overflow-x: auto; width: 100%; border-radius: 8px; background: white; -webkit-overflow-scrolling: touch; }
+        @media (max-width: 1024px) {
+            body { padding: 10px 0px; }
+            .card { border-radius: 0; border: none; }
+            .header-section { padding: 0 15px; }
+        }
+
+        .table-container {
+            overflow-x: auto;
+            width: 100%;
+            background: white;
+            position: relative;
+            -webkit-overflow-scrolling: touch;
+        }
 
         table { border-collapse: separate; border-spacing: 0; width: 100%; }
 
-        /* УМЕНЬШЕННАЯ ВЫСОТА СТРОК */
-        th, td { border: 1px solid #e2e8f0; height: 44px; text-align: center; vertical-align: middle; }
-        th { background: #f8fafc; font-weight: 800; text-transform: uppercase; color: #64748b; font-size: 9px; height: 48px; }
+        th, td {
+            border-bottom: 1px solid #e2e8f0;
+            border-right: 1px solid #f1f5f9;
+            height: 60px;
+            padding: 0;
+            text-align: center;
+        }
+
+        /* ФИКСАЦИЯ */
+        .col-sticky-num {
+            position: sticky; left: 0; z-index: 50;
+            width: 40px; min-width: 40px;
+            background: #f8fafc !important;
+            border-right: 1px solid #e2e8f0;
+            font-size: 10px; font-weight: 900; color: #94a3b8;
+        }
 
         .col-sticky-user {
-            width: 170px; min-width: 170px; text-align: left; padding: 4px 10px;
-            position: sticky; left: 0; z-index: 30; background: #fff;
-            border-right: 3px solid #3b82f6;
+            position: sticky; left: 40px; z-index: 40;
+            width: 250px; min-width: 250px;
+            background: white !important;
+            text-align: left;
+            padding: 8px 15px !important;
+            box-shadow: 4px 0 10px -2px rgba(0,0,0,0.1);
+            border-right: 3px solid #3b82f6 !important;
         }
-        th.col-sticky-user { background: #f8fafc; z-index: 40; }
 
-        /* ТИПОГРАФИКА ФИО (ПОЛНОСТЬЮ И ЖИРНО) */
-        .emp-f { font-size: 13px; font-weight: 900; color: #0f172a; text-transform: uppercase; line-height: 1; letter-spacing: -0.01em; }
-        .emp-io { font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; line-height: 1; margin-top: 1px; }
-        .pos-text { font-size: 7px; font-weight: 800; color: #3b82f6; text-transform: uppercase; line-height: 1; margin-top: 2px; }
+        th.col-sticky-num, th.col-sticky-user { z-index: 60; background: #f8fafc !important; }
 
-        .day-col { width: 38px; min-width: 38px; font-weight: 900; font-size: 13px; color: white; text-shadow: 0 1px 1px rgba(0,0,0,0.2); }
+        /* ТЕКСТ */
+        .fio-full { font-size: 13px; font-weight: 800; color: #1e293b; text-transform: uppercase; line-height: 1.1; display: block; }
+        .post-label { font-size: 9px; font-weight: 700; color: #3b82f6; text-transform: uppercase; margin-top: 3px; display: block; opacity: 0.8; }
 
-        .weekend-h { background-color: #fee2e2 !important; color: #991b1b !important; }
-        .weekend-cell { background-color: #fff1f2 !important; }
+        /* ЯЧЕЙКИ ДНЕЙ */
+        .day-cell { width: 48px; min-width: 48px; }
+        .day-val { font-size: 15px; font-weight: 900; }
 
-        .summary-pill { display: flex; align-items: center; border-radius: 9999px; padding: 4px 12px; color: white; margin-bottom: 4px; }
-        .summary-lab { font-size: 9px; font-weight: 900; text-transform: uppercase; }
+        /* Цвета дней недели */
+        .weekday-name { font-size: 8px; font-weight: 800; text-transform: uppercase; color: #94a3b8; }
+        .weekend-name { color: #e11d48; }
+        .weekend-bg { background: #fff1f2 !important; }
 
-        .custom-scroll::-webkit-scrollbar { height: 5px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        /* ЛЕГЕНДА */
+        .status-pill {
+            display: flex; align-items: center; gap: 8px;
+            background: white; border: 1px solid #e2e8f0;
+            padding: 6px 12px; border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
     </style>
 </head>
 <body>
 
-<div class="mb-5 px-1">
-    <div class="flex flex-row justify-between items-center">
-        <h1 class="text-4xl font-900 text-slate-900 uppercase tracking-tighter leading-none">ТАБЕЛЬ</h1>
-        <div class="bg-slate-900 text-white px-3 py-2 rounded text-[10px] font-900 uppercase tracking-wider">
-            {{ $timesheet->responsible_name ?? 'Федин Руслан Анатольевич' }}
+<div class="header-section mb-6">
+    <div class="flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">Табель</h1>
+            <p class="text-sm font-bold text-slate-400 uppercase mt-2">
+                {{ \Carbon\Carbon::parse($timesheet->start_date)->translatedFormat('F Y') }}
+            </p>
+        </div>
+        <div class="hidden md:block text-right">
+            <p class="text-[9px] font-black text-slate-400 uppercase">Ответственный</p>
+            <p class="text-xs font-bold text-slate-900 uppercase">{{ $timesheet->responsible_name ?? 'Федин Руслан Анатольевич' }}</p>
         </div>
     </div>
-    <p class="text-blue-600 font-900 text-[11px] uppercase tracking-widest mt-2">
-        за {{ \Carbon\Carbon::parse($timesheet->start_date)->translatedFormat('F') }}
-        с {{ \Carbon\Carbon::parse($timesheet->start_date)->format('d.m.y') }}
-        по {{ \Carbon\Carbon::parse($timesheet->end_date)->format('d.m.y') }}
-    </p>
 </div>
 
-{{-- ТАБЛИЦА --}}
-<div class="card shadow-md">
+<div class="card bg-white border border-slate-200 shadow-sm overflow-hidden">
     <div class="table-container custom-scroll">
         <table>
             <thead>
                 <tr>
+                    <th class="col-sticky-num">№</th>
                     <th class="col-sticky-user">Сотрудник / Должность</th>
                     @foreach($dates as $date)
-                        @php $dayName = mb_substr($date->translatedFormat('D'), 0, 2); @endphp
-                        <th class="{{ $date->isWeekend() ? 'weekend-h' : '' }}">
-                            <span class="text-base leading-none">{{ $date->format('d') }}</span><br>
-                            <span class="text-[7px] font-black opacity-60 uppercase">{{ $dayName }}</span>
+                        @php
+                            $isWknd = $date->isWeekend();
+                            $dayName = mb_substr($date->translatedFormat('D'), 0, 2);
+                        @endphp
+                        <th class="day-cell {{ $isWknd ? 'weekend-bg' : '' }}">
+                            <div class="text-[13px] font-black {{ $isWknd ? 'text-rose-600' : 'text-slate-700' }}">{{ $date->format('d') }}</div>
+                            <div class="weekday-name {{ $isWknd ? 'weekend-name' : '' }}">{{ $dayName }}</div>
                         </th>
                     @endforeach
                 </tr>
             </thead>
-            <tbody>
-                @foreach($employees as $emp)
-                <tr>
-                    <td class="col-sticky-user">
-                        <div class="emp-f">{{ $emp->last_name }}</div>
-                        <div class="emp-io">{{ $emp->first_name }} {{ $emp->middle_name }}</div>
-                        <div class="pos-text">
-                            @php
-                                $pos = $emp->position;
-                                if (is_string($pos) && str_contains($pos, '{')) {
-                                    $posData = json_decode($pos); echo $posData->NAME ?? $posData->name ?? $pos;
-                                } elseif (is_object($pos)) {
-                                    echo $pos->NAME ?? $pos->name ?? '---';
-                                } else { echo $pos->name ?? $pos ?? '---'; }
-                            @endphp
-                        </div>
-                    </td>
-                    @foreach($dates as $date)
-                        @php
-                            $dateStr = $date->format('Y-m-d');
-                            $item = $items[$emp->id][$dateStr] ?? null;
-                            $st = $item ? $statuses->where('id', $item->status_id)->first() : null;
-                        @endphp
-                        <td class="day-col {{ $date->isWeekend() ? 'weekend-cell' : '' }}"
-                            style="background-color: {{ $st->color ?? '' }}">
-                            {{ $st->short_name ?? '' }}
-                        </td>
-                    @endforeach
-                </tr>
-                @endforeach
-            </tbody>
+
+<tbody>
+    @foreach($employees as $emp)
+    @php
+        // Проверяем должность на "Бригадир" (без учета регистра и лишних пробелов)
+        $isBrigadier = trim(mb_strtolower($emp->position->name ?? '')) === 'бригадир';
+    @endphp
+    <tr>
+        {{-- Номер --}}
+        <td class="col-sticky-num {{ $isBrigadier ? '!bg-rose-100' : '' }}">{{ $loop->iteration }}</td>
+
+        {{-- Липкая колонка с ФИО и Должностью --}}
+        <td class="col-sticky-user {{ $isBrigadier ? '!bg-rose-50' : '' }}">
+            <span class="fio-full">{{ $emp->last_name }} {{ $emp->first_name }} {{ $emp->middle_name }}</span>
+
+            {{-- Если бригадир — текст красный и жирный, иначе стандартный синий --}}
+            <span class="post-label {{ $isBrigadier ? '!text-rose-600 font-black' : '' }}">
+                {{ $emp->position->name ?? 'РАБОЧИЙ ОЗХ' }}
+            </span>
+        </td>
+
+        @foreach($dates as $date)
+            @php
+                $dateStr = $date->format('Y-m-d');
+                $item = $items[$emp->id][$dateStr] ?? null;
+                $st = $item ? $statuses->where('id', $item->status_id)->first() : null;
+            @endphp
+            {{-- Ячейки дней --}}
+            <td class="day-cell {{ $date->isWeekend() ? 'bg-rose-50/30' : '' }}"
+                style="background-color: {{ $st->color ?? ($isBrigadier ? '#fff1f2' : '') }};
+                       color: {{ $st ? 'white' : ($date->isWeekend() ? '#fda4af' : '#e2e8f0') }}">
+                <span class="day-val">{{ $st->short_name ?? '' }}</span>
+            </td>
+        @endforeach
+    </tr>
+    @endforeach
+</tbody>
         </table>
     </div>
 </div>
 
-{{-- НИЖНЯЯ СВОДКА --}}
-<div class="mt-4">
-    <div class="card">
-        <div class="bg-slate-900 text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest">
-            Условные обозначения
-        </div>
-        <div class="p-4 flex flex-wrap gap-2">
-            @foreach($statuses as $s)
-                <div class="summary-pill shadow-sm" style="background: {{ $s->color }}">
-                    <div class="summary-lab">{{ $s->name }}</div>
+{{-- ВОЗВРАЩЕННАЯ ЛЕГЕНДА --}}
+<div class="header-section mt-8">
+    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 italic">Условные обозначения:</h3>
+    <div class="flex flex-wrap gap-3">
+        @foreach($statuses as $s)
+            <div class="status-pill">
+                <div class="w-6 h-6 rounded flex items-center justify-center text-[11px] font-black text-white shadow-sm" style="background: {{ $s->color }}">
+                    {{ $s->short_name }}
                 </div>
-            @endforeach
-        </div>
+                <div class="text-[10px] font-black text-slate-600 uppercase tracking-tight">{{ $s->name }}</div>
+            </div>
+        @endforeach
     </div>
 </div>
 

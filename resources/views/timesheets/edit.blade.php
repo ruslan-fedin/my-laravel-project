@@ -3,8 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <title>Редактировать табель</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+
+  <script src="{{ asset('vendor/tailwind.min.js') }}"></script>
+<link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
+<link rel="stylesheet" href="{{ asset('vendor/inter/inter.css') }}">
+<script src="{{ asset('vendor/xlsx.bundle.js') }}"></script>
+
+
+
+<script src="{{ asset('vendor/tailwind.min.js') }}"></script>
+<link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
+<link rel="stylesheet" href="{{ asset('fonts/inter/inter.css') }}">
+<script src="{{ asset('vendor/xlsx.bundle.js') }}"></script>
+
+
 </head>
 <body class="bg-gray-100 p-8">
 

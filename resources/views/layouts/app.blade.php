@@ -1,22 +1,23 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Учет времени</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{{ asset('vendor/tailwind.min.js') }}"></script>
+    <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('fonts/inter/inter.css') }}">
+    <script src="{{ asset('vendor/xlsx.bundle.js') }}"></script>
 
     <style>
-        /* Адаптивные отступы согласно вашему требованию */
+        /* Адаптивные отступы: мобильные — 1rem, ПК — 120px */
         .indent-area {
-            /* На мобильных — минимальные отступы (16px) */
             padding-left: 1rem;
             padding-right: 1rem;
         }
 
-        /* На устройствах шире 1024px (планшеты/ПК) включаем ваши 120px */
         @media (min-width: 1024px) {
             .indent-area {
                 padding-left: 120px !important;
@@ -38,9 +39,10 @@
             </div>
         </main>
 
-        <footer class="indent-area py-4 text-center text-sm text-slate-500 border-t bg-white">
-            &copy; {{ date('Y') }} Учет времени — Федин Руслан Александрович
+        <footer class="mt-12">
+            @include('layouts.footer')
         </footer>
+
     </div>
 </body>
 </html>

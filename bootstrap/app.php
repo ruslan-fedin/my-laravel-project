@@ -14,7 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     // Указываем системе, что после входа нужно идти на /timesheets
     $middleware->redirectTo(
         guests: '/login',
-        users: '/timesheets'
+        users: '/'
     );
 })
     ->withExceptions(function (Exceptions $exceptions): void {

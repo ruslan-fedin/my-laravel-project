@@ -114,8 +114,10 @@
     }
 </style>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
+<script src="{{ asset('vendor/tailwind.min.js') }}"></script>
+<link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
+<link rel="stylesheet" href="{{ asset('fonts/inter/inter.css') }}">
+<script src="{{ asset('vendor/xlsx.bundle.js') }}"></script>
 <div class="index-page-wrapper">
     <div class="flex flex-col lg:flex-row lg:justify-between lg:items-end gap-6 mb-8">
         <div>
@@ -154,82 +156,77 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($timesheets as $index => $ts)
-                @php
-                    $start = \Carbon\Carbon::parse($ts->start_date);
-                    $end = \Carbon\Carbon::parse($ts->end_date);
-                    $months = [
-                        1 => 'ЯНВАРЬ', 2 => 'ФЕВРАЛЬ', 3 => 'МАРТ', 4 => 'АПРЕЛЬ', 5 => 'МАЙ', 6 => 'ИЮНЬ',
-                        7 => 'ИЮЛЬ', 8 => 'АВГУСТ', 9 => 'СЕНТЯБРЬ', 10 => 'ОКТЯБРЬ', 11 => 'НОЯБРЬ', 12 => 'ДЕКАБРЬ'
-                    ];
-                @endphp
-                {{-- Строка для ПК --}}
-                <tr class="row-style">
-                    <td class="num-cell cell-py">{{ $index + 1 }}</td>
-                    <td class="month-cell cell-py">
-                        {{ $months[$start->month] }} {{ $start->year }}
-                    </td>
-                    <td class="dates-cell cell-py">
-                        {{ $start->format('d.m.Y') }} <span class="text-slate-300 mx-3">—</span> {{ $end->format('d.m.Y') }}
-                    </td>
-                    <td class="cell-py">
-                        <div class="action-container">
-                            <a href="{{ route('travel-timesheets.show', $ts) }}" class="btn-icon view" title="Открыть">
-                                <i class="fa-solid fa-eye"></i>
-                            </a>
-                            <form action="{{ route('travel-timesheets.destroy', $ts) }}" method="POST" onsubmit="return confirm('Удалить этот табель?')">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="btn-icon delete" title="Удалить">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
+    @forelse($timesheets as $index => $ts)
+    @php
+        $start = \Carbon\Carbon::parse($ts->start_date);
+        $end = \Carbon\Carbon::parse($ts->end_date);
+        $months = [
+            1 => 'ЯНВАРЬ', 2 => 'ФЕВРАЛЬ', 3 => 'МАРТ', 4 => 'АПРЕЛЬ', 5 => 'МАЙ', 6 => 'ИЮНЬ',
+            7 => 'ИЮЛЬ', 8 => 'АВГУСТ', 9 => 'СЕНТЯБРЬ', 10 => 'ОКТЯБРЬ', 11 => 'НОЯБРЬ', 12 => 'ДЕКАБРЬ'
+        ];
+    @endphp
 
-                {{-- Мобильная версия той же строки (через карточку) --}}
-                <div class="mobile-card">
-                    <div class="flex justify-between items-start mb-3">
-                        <div>
-                            <span class="text-[10px] font-black text-slate-300 uppercase">#{{ $index + 1 }}</span>
-                            <h3 class="text-lg font-black text-slate-800 uppercase leading-none">{{ $months[$start->month] }}</h3>
-                            <p class="text-slate-400 font-bold text-xs mt-1">{{ $start->year }}</p>
-                        </div>
-                        <div class="flex gap-4">
-                            <a href="{{ route('travel-timesheets.show', $ts) }}" class="text-blue-600 text-2xl">
-                                <i class="fa-solid fa-circle-arrow-right"></i>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="bg-slate-50 p-3 rounded-lg flex items-center justify-between">
-                        <span class="text-[11px] font-bold text-slate-500">{{ $start->format('d.m.Y') }} — {{ $end->format('d.m.Y') }}</span>
-                        <form action="{{ route('travel-timesheets.destroy', $ts) }}" method="POST" onsubmit="return confirm('Удалить этот табель?')">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="text-red-400 text-lg ml-4">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                        </form>
-                    </div>
-                </div>
+    <tr class="row-style">
+        <td class="num-cell cell-py">{{ $index + 1 }}</td>
+        <td class="month-cell cell-py">
+            {{ $months[$start->month] }} {{ $start->year }}
+        </td>
+        <td class="dates-cell cell-py">
+            {{ $start->format('d.m.Y') }} <span class="text-slate-300 mx-3">—</span> {{ $end->format('d.m.Y') }}
+        </td>
+        <td class="cell-py">
+            <div class="action-container">
+                <a href="{{ route('travel-timesheets.show', $ts) }}" class="btn-icon view" title="Открыть">
+                    <i class="fa-solid fa-eye"></i>
+                </a>
+                {{-- КНОПКА РЕДАКТИРОВАТЬ --}}
+                <a href="{{ route('travel-timesheets.edit', $ts) }}" class="btn-icon edit-btn" title="Редактировать">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </a>
+                <form action="{{ route('travel-timesheets.destroy', $ts) }}" method="POST" onsubmit="return confirm('Удалить этот табель?')">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn-icon delete" title="Удалить">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </form>
+            </div>
+        </td>
+    </tr>
 
-                @empty
-                <tr>
-                    <td colspan="4" class="py-12 text-center text-slate-300 font-black uppercase text-xs tracking-widest">
-                        Список пуст
-                    </td>
-                </tr>
-                {{-- Для мобилки пустое состояние --}}
-                <div class="mobile-card text-center py-10 text-slate-300 font-black uppercase text-[10px]">
-                    Список пуст
-                </div>
-                @endforelse
-            </tbody>
+    <div class="mobile-card">
+        <div class="flex justify-between items-start mb-3">
+            <div>
+                <span class="text-[10px] font-black text-slate-300 uppercase">#{{ $index + 1 }}</span>
+                <h3 class="text-lg font-black text-slate-800 uppercase leading-none">{{ $months[$start->month] }}</h3>
+                <p class="text-slate-400 font-bold text-xs mt-1">{{ $start->year }}</p>
+            </div>
+            <div class="flex gap-4 items-center">
+                {{-- РЕДАКТИРОВАТЬ (МОБ) --}}
+                <a href="{{ route('travel-timesheets.edit', $ts) }}" class="text-slate-400 text-xl">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </a>
+                <a href="{{ route('travel-timesheets.show', $ts) }}" class="text-blue-600 text-3xl">
+                    <i class="fa-solid fa-circle-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+        <div class="bg-slate-50 p-3 rounded-lg flex items-center justify-between">
+            <span class="text-[11px] font-bold text-slate-500">{{ $start->format('d.m.Y') }} — {{ $end->format('d.m.Y') }}</span>
+            <form action="{{ route('travel-timesheets.destroy', $ts) }}" method="POST" onsubmit="return confirm('Удалить этот табель?')">
+                @csrf @method('DELETE')
+                <button type="submit" class="text-red-400 text-lg ml-4">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+    @empty
+    {{-- ... --}}
+    @endforelse
+</tbody>
         </table>
     </div>
 
-    <div class="mt-8">
-        @include('layouts.footer')
-    </div>
-</div>
+
 
 @endsection

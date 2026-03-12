@@ -88,7 +88,5 @@
     </div>
 </div>
 
-  <div class="mt-8">
-@include('layouts.footer')
-    </div>
+
 @endsection

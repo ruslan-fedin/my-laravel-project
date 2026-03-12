@@ -40,6 +40,8 @@ class Employee extends Model
         'birth_date' => 'date',
         'hire_date' => 'date',
         'deleted_at' => 'datetime',
+         'vacation_start' => 'date',
+    'vacation_end' => 'date',
     ];
 
     /**
@@ -61,10 +63,10 @@ public function leader()
     /**
      * Отношение к должности.
      */
-    public function position(): BelongsTo
-    {
-        return $this->belongsTo(Position::class, 'position_id');
-    }
+   public function position()
+{
+    return $this->belongsTo(Position::class, 'position_id');
+}
 
     /**
      * Отношение к подчиненным (для структуры бригад).
@@ -110,4 +112,16 @@ public function leader()
 {
     return $this->hasMany(TravelTimesheet::class);
 }
+
+public function employees(): HasMany
+    {
+        return $this->hasMany(Employee::class, 'position_id');
+    }
+
+
+    //_scope для активных
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 }

@@ -1,8 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
+<script src="{{ asset('vendor/tailwind.min.js') }}"></script>
+<link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
+<link rel="stylesheet" href="{{ asset('fonts/inter/inter.css') }}">
+<script src="{{ asset('vendor/xlsx.bundle.js') }}"></script>
 <style>
     /* БАЗОВЫЕ ОТСТУПЫ СТРАНИЦЫ */
     .archive-wrapper {
@@ -178,14 +180,7 @@
         @endforelse
     </div>
 
-    <div class="mt-6 text-[9px] md:text-[10px] font-bold uppercase text-slate-400">
-        Запись внес: <span class="text-slate-900">{{ Auth::user()->name }}</span>
-    </div>
-
-    <div class="mt-8">
-        @include('layouts.footer')
-    </div>
-</div>
+   
 
 <script>
 function sortTable(n) {
