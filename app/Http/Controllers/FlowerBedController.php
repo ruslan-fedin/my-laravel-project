@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\FlowerBed;
 use App\Models\FlowerBedFile;
 use App\Models\FlowerBedLog;
+use App\Models\WorkRecord;
+use App\Models\WorkType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -20,7 +22,6 @@ class FlowerBedController extends Controller
     {
         $query = FlowerBed::with(['createdBy', 'updatedBy', 'files']);
 
-        // 🔍 Поиск по названию, району, адресу
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -31,17 +32,14 @@ class FlowerBedController extends Controller
             });
         }
 
-        // 📍 Фильтр по району (только если выбран)
         if ($request->filled('district')) {
             $query->where('district', $request->district);
         }
 
-        // 🌿 Фильтр по типу (только если выбран 0 или 1)
         if ($request->has('perennial') && in_array($request->perennial, ['0', '1'])) {
             $query->where('is_perennial', $request->perennial === '1');
         }
 
-        // ✅ Фильтр по статусу (только если выбран 0 или 1)
         if ($request->has('status') && in_array($request->status, ['0', '1'])) {
             $query->where('is_active', $request->status === '1');
         }
@@ -60,17 +58,12 @@ class FlowerBedController extends Controller
 
         return view('flower-beds.index', compact('flowerBeds', 'districts'));
     }
-    /**
-     * Форма создания клумбы
-     */
+
     public function create()
     {
         return view('flower-beds.create');
     }
 
-    /**
-     * Сохранение новой клумбы
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -97,7 +90,6 @@ class FlowerBedController extends Controller
             'updated_by' => Auth::id(),
         ]);
 
-        // Лог создания
         FlowerBedLog::create([
             'flower_bed_id' => $flowerBed->id,
             'user_id' => Auth::id(),
@@ -118,26 +110,29 @@ class FlowerBedController extends Controller
     }
 
     /**
-     * Просмотр клумбы
+     * Просмотр клумбы (ИСПРАВЛЕНО: добавлена загрузка photos и flowers)
      */
     public function show(FlowerBed $flowerBed)
     {
-        $flowerBed->load(['files', 'logs.user']);
-        return view('flower-beds.show', compact('flowerBed'));
+        $flowerBed->load(['logs', 'files']);
+
+        // Загружаем историю работ с фото и цветами
+        $workRecords = WorkRecord::with(['workType', 'flowers', 'photos', 'createdBy'])
+            ->where('flower_bed_id', $flowerBed->id)
+            ->orderByDesc('work_date')
+            ->get();
+
+        $workTypes = WorkType::active()->ordered()->get();
+
+        return view('flower-beds.show', compact('flowerBed', 'workRecords', 'workTypes'));
     }
 
-    /**
-     * Форма редактирования клумбы
-     */
     public function edit(FlowerBed $flowerBed)
     {
         $flowerBed->load('files');
         return view('flower-beds.edit', compact('flowerBed'));
     }
 
-    /**
-     * Обновление клумбы
-     */
     public function update(Request $request, FlowerBed $flowerBed)
     {
         $validated = $request->validate([
@@ -167,7 +162,6 @@ class FlowerBedController extends Controller
 
         $newValues = $flowerBed->only(['short_name', 'full_name', 'district', 'address', 'area', 'is_active', 'is_perennial', 'notes']);
 
-        // Лог обновления
         FlowerBedLog::create([
             'flower_bed_id' => $flowerBed->id,
             'user_id' => Auth::id(),
@@ -182,9 +176,6 @@ class FlowerBedController extends Controller
             ->with('success', '✅ Клумба обновлена');
     }
 
-    /**
-     * Удаление клумбы
-     */
     public function destroy(FlowerBed $flowerBed)
     {
         FlowerBedLog::create([
@@ -201,9 +192,6 @@ class FlowerBedController extends Controller
             ->with('success', '✅ Клумба удалена');
     }
 
-    /**
-     * AJAX: Загрузка файла
-     */
     public function uploadFile(Request $request, FlowerBed $flowerBed)
     {
         $validated = $request->validate([
@@ -274,9 +262,6 @@ class FlowerBedController extends Controller
         ]);
     }
 
-    /**
-     * AJAX: Удаление файла
-     */
     public function destroyFile(FlowerBedFile $file)
     {
         $flowerBed = $file->flowerBed;
@@ -303,26 +288,17 @@ class FlowerBedController extends Controller
         ]);
     }
 
-    /**
-     * Скачать файл
-     */
     public function downloadFile(FlowerBedFile $file)
     {
         return Storage::disk('public')->download($file->file_path, $file->original_name);
     }
 
-    /**
-     * Просмотр файла в браузере
-     */
     public function viewFile(FlowerBedFile $file)
     {
         $path = Storage::disk('public')->path($file->file_path);
         return response()->file($path);
     }
 
-    /**
-     * AJAX: Редактирование записи лога
-     */
     public function editFlowerBedLog(FlowerBedLog $log)
     {
         return response()->json([
@@ -335,9 +311,6 @@ class FlowerBedController extends Controller
         ]);
     }
 
-    /**
-     * AJAX: Обновление записи лога
-     */
     public function updateFlowerBedLog(Request $request, FlowerBedLog $log)
     {
         if (!$log->is_editable) {
@@ -374,9 +347,6 @@ class FlowerBedController extends Controller
         ]);
     }
 
-    /**
-     * AJAX: Удаление записи лога (ЕДИНСТВЕННЫЙ МЕТОД)
-     */
     public function deleteFlowerBedLog(FlowerBedLog $log)
     {
         $flowerBedId = $log->flower_bed_id;
@@ -402,9 +372,6 @@ class FlowerBedController extends Controller
         ]);
     }
 
-    /**
-     * 🔥 AJAX: Живой поиск клумб
-     */
     public function search(Request $request)
     {
         $query = $request->get('query', '');

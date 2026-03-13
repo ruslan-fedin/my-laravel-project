@@ -1,0 +1,37 @@
+[90m= [39m[34;4mIlluminate\Database\Eloquent\Collection[39;24m {#6256
+    [34mall[39m: [
+      [34;4mApp\Models\WorkType[39;24m {#6668
+        [34mname[39m: "[32mКультивация почвы[39m",
+        [34mcode[39m: "[32mcultivation[39m",
+      },
+      [34;4mApp\Models\WorkType[39;24m {#6670
+        [34mname[39m: "[32mПосадка тюльпанов[39m",
+        [34mcode[39m: "[32mplanting_tulips[39m",
+      },
+      [34;4mApp\Models\WorkType[39;24m {#1705
+        [34mname[39m: "[32mПосадка однолетников[39m",
+        [34mcode[39m: "[32mplanting_annuals[39m",
+      },
+      [34;4mApp\Models\WorkType[39;24m {#6671
+        [34mname[39m: "[32mУкрытие щепой[39m",
+        [34mcode[39m: "[32mmulching[39m",
+      },
+      [34;4mApp\Models\WorkType[39;24m {#6673
+        [34mname[39m: "[32mСнятие укрытия[39m",
+        [34mcode[39m: "[32munmulching[39m",
+      },
+      [34;4mApp\Models\WorkType[39;24m {#6675
+        [34mname[39m: "[32mПолив[39m",
+        [34mcode[39m: "[32mwatering[39m",
+      },
+      [34;4mApp\Models\WorkType[39;24m {#6672
+        [34mname[39m: "[32mПрополка[39m",
+        [34mcode[39m: "[32mweeding[39m",
+      },
+      [34;4mApp\Models\WorkType[39;24m {#6677
+        [34mname[39m: "[32mОбрезка[39m",
+        [34mcode[39m: "[32mpruning[39m",
+      },
+    ],
+  }
+
